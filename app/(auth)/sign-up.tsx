@@ -1,6 +1,8 @@
 import CustomButton from '@/components/CustomButton'
 import InputField from '@/components/InputFields'
-import { images } from '@/constant/image'
+import OAuth from '@/components/OAuth'
+import { icons, images } from '@/constant/image'
+import { Link } from 'expo-router'
 import React, { useState } from 'react'
 import { Image, ScrollView, Text, View } from 'react-native'
 
@@ -31,14 +33,14 @@ export default function SignUp() {
           <InputField
             label="Name"
             placeholder="Enter name"
-            // icon={icons.person}
+            icon={icons.person}
             value={form.name}
             onChangeText={(value) => setForm({ ...form, name: value })}
           />
           <InputField
             label="Email"
             placeholder="Enter email"
-            //  icon={icons.email}
+            icon={icons.email}
             textContentType="emailAddress"
             value={form.email}
             onChangeText={(value) => setForm({ ...form, email: value })}
@@ -46,7 +48,7 @@ export default function SignUp() {
           <InputField
             label="Password"
             placeholder="Enter password"
-            // icon={icons.lock}
+            icon={icons.lock}
             secureTextEntry={true}
             textContentType="password"
             value={form.password}
@@ -57,6 +59,14 @@ export default function SignUp() {
             onPress={onSignUpPress}
             className="mt-6"
           />
+          <OAuth />
+          <Link
+            href="/sign-in"
+            className="text-lg text-center text-general-200 mt-10"
+          >
+            Already have an account?{" "}
+            <Text className="text-primary-500">Log In</Text>
+          </Link>
         </View>
       </View>
     </ScrollView>
