@@ -50,15 +50,17 @@ export default function Home() {
         ))}
       </Swiper>
 
-      <CustomButton
-        title={isLastSlide ? "Get Started" : "Next"}
-        onPress={() =>
-          isLastSlide
-            ? router.replace("/(auth)/sign-up")
-            : swiperRef.current?.scrollBy(1)
-        }
-        className="w-11/12 mt-10 mb-5"
-      />
+      <View className='w-11/12 mt-10 mb-5'>
+        <CustomButton
+          title={isLastSlide ? "Get Started" : "Next"}
+          onPress={() =>
+            isLastSlide
+              ? router.replace("/(auth)/sign-up")
+              : swiperRef.current?.scrollBy(1)
+          }
+          className="w-full "
+        />
+      </View>
     </SafeAreaView>
   )
 }
