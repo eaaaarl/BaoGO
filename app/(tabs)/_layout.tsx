@@ -1,7 +1,7 @@
 import { icons } from "@/constant/image";
 import { Tabs } from "expo-router";
-import { Image, ImageSourcePropType, View } from "react-native";
-
+import { Image, ImageSourcePropType, Platform, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TabIcon = ({
   source,
@@ -11,7 +11,7 @@ const TabIcon = ({
   focused: boolean;
 }) => (
   <View
-    className={`w-14 h-14 rounded-full items-center justify-center mb-8 ${focused ? "bg-general-400" : "bg-transparent"
+    className={`w-14 h-14 rounded-full items-center my-auto  justify-center ${focused ? "bg-general-400" : "bg-transparent"
       }`}
   >
     <Image
@@ -23,7 +23,18 @@ const TabIcon = ({
   </View>
 );
 
+// Custom tab button component to remove ripple effect
+const CustomTabButton = (props: any) => (
+  <TouchableOpacity
+    {...props}
+    activeOpacity={1} // This removes the opacity effect on press
+    style={props.style}
+  />
+);
+
 export default function Layout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       initialRouteName="index"
@@ -34,10 +45,10 @@ export default function Layout() {
         tabBarStyle: {
           backgroundColor: "#333333",
           borderRadius: 50,
-          paddingBottom: 0, // ios only
+          paddingBottom: Platform.OS === 'ios' ? 0 : insets.bottom,
           overflow: "hidden",
           marginHorizontal: 20,
-          marginBottom: 20,
+          marginBottom: Platform.OS === 'android' ? insets.bottom : 0,
           height: 78,
           display: "flex",
           justifyContent: "space-around",
@@ -56,6 +67,7 @@ export default function Layout() {
           tabBarIcon: ({ focused }) => (
             <TabIcon source={icons.home} focused={focused} />
           ),
+          tabBarButton: (props) => <CustomTabButton {...props} />,
         }}
       />
       <Tabs.Screen
@@ -66,6 +78,7 @@ export default function Layout() {
           tabBarIcon: ({ focused }) => (
             <TabIcon source={icons.ride} focused={focused} />
           ),
+          tabBarButton: (props) => <CustomTabButton {...props} />,
         }}
       />
       <Tabs.Screen
@@ -76,6 +89,7 @@ export default function Layout() {
           tabBarIcon: ({ focused }) => (
             <TabIcon source={icons.chat} focused={focused} />
           ),
+          tabBarButton: (props) => <CustomTabButton {...props} />,
         }}
       />
       <Tabs.Screen
@@ -86,6 +100,7 @@ export default function Layout() {
           tabBarIcon: ({ focused }) => (
             <TabIcon source={icons.profile} focused={focused} />
           ),
+          tabBarButton: (props) => <CustomTabButton {...props} />,
         }}
       />
     </Tabs>
