@@ -16,6 +16,7 @@ export default function Home() {
     <SafeAreaView className='flex h-full items-center justify-between bg-white'>
       <TouchableOpacity
         className='w-full flex justify-end items-end p-5'
+        onPress={() => router.replace("/(auth)/sign-in")}
       >
         <Text className='text-black text-md'>Skip</Text>
       </TouchableOpacity>
