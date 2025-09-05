@@ -2,9 +2,9 @@ import CustomButton from '@/components/CustomButton'
 import InputField from '@/components/InputFields'
 import OAuth from '@/components/OAuth'
 import { icons, images } from '@/constant/image'
-import { supabase } from '@/libs/supabase'
+import { useSignUpMutation } from '@/feature/auth/api/authApi'
 import { Link, router } from 'expo-router'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Alert, Image, ScrollView, Text, View } from 'react-native'
 
 export default function SignUp() {
@@ -13,7 +13,6 @@ export default function SignUp() {
     email: "",
     password: "",
   })
-  const [loading, setLoading] = useState(false)
 
   const validateForm = () => {
     if (!form.name.trim()) {
@@ -35,83 +34,30 @@ export default function SignUp() {
     return true
   }
 
+  // RTK QUERY
+  const [signUp, { isLoading }] = useSignUpMutation();
+
   const onSignUpPress = async () => {
-    if (!validateForm()) return
-
-    setLoading(true)
+    if (!validateForm()) return;
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: form.email.trim().toLowerCase(),
+      const result = await signUp({
+        email: form.email,
         password: form.password,
-        options: {
-          data: {
-            full_name: form.name.trim(),
-          }
-        }
-      })
+        full_name: form.name
+      }).unwrap();
 
-      if (authError) {
-        Alert.alert('Sign Up Error', authError.message)
-        return
+      if (result) {
+        Alert.alert('Success', 'Account created successfully!');
+        router.replace('/(tabs)/home');
+      } else {
+        Alert.alert('Sign Up Error', 'Something went wrong');
       }
 
-      if (authData.user) {
-        if (!authData.session) {
-          Alert.alert(
-            'Check Your Email',
-            'Please check your email for a confirmation link to complete your registration.',
-            [
-              {
-                text: 'OK',
-                onPress: () => router.replace('/sign-in')
-              }
-            ]
-          )
-        } else {
-          await createUserProfile(authData.user.id)
-        }
-      }
     } catch (error) {
-      console.error('Sign up error:', error)
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.')
-    } finally {
-      setLoading(false)
+      Alert.alert('Sign Up Error', error as string);
     }
-  }
-
-  const createUserProfile = async (userId: string) => {
-    try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: userId,
-            full_name: form.name.trim(),
-            email: form.email.trim().toLowerCase(),
-            created_at: new Date().toISOString(),
-          }
-        ])
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError)
-      }
-
-      Alert.alert(
-        'Success',
-        'Account created successfully! Welcome!',
-        [
-          {
-            text: 'Get Started',
-            onPress: () => router.replace('/(tabs)/home')
-          }
-        ]
-      )
-    } catch (error) {
-      console.error('Profile creation error:', error)
-      router.replace('/(tabs)/home')
-    }
-  }
+  };
 
   return (
     <ScrollView className='flex-1 bg-white'>
@@ -154,10 +100,10 @@ export default function SignUp() {
           />
 
           <CustomButton
-            title={loading ? "Creating Account..." : "Sign Up"}
+            title={isLoading ? "Creating Account..." : "Sign Up"}
             onPress={onSignUpPress}
             className="mt-6"
-            disabled={loading}
+            disabled={isLoading}
           />
 
           <OAuth />
