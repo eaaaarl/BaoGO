@@ -1,11 +1,12 @@
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import { useCallback, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-native";
 
 import CustomButton from "@/components/CustomButton";
 import InputField from "@/components/InputFields";
 import OAuth from "@/components/OAuth";
 import { icons, images } from "@/constant/image";
+import { useSignInMutation } from "@/feature/auth/api/authApi";
 
 const SignIn = () => {
 
@@ -14,9 +15,17 @@ const SignIn = () => {
     password: "",
   });
 
-  const onSignInPress = useCallback(async () => {
 
-  }, []);
+  const [signIn, { isLoading }] = useSignInMutation();
+
+  const onSignInPress = useCallback(async () => {
+    try {
+      await signIn({ email: form.email, password: form.password }).unwrap();
+      router.replace('/(tabs)');
+    } catch (error) {
+      Alert.alert('Sign In Error', error as string);
+    }
+  }, [form.email, form.password, signIn]);
 
   return (
     <ScrollView className="flex-1 bg-white">
@@ -64,6 +73,18 @@ const SignIn = () => {
             <Text className="text-primary-500">Sign Up</Text>
           </Link>
         </View>
+
+        {/* Loading Overlay */}
+        {isLoading && (
+          <View className="absolute inset-0 bg-black/50 flex-1 justify-center items-center z-50">
+            <View className="bg-white rounded-lg p-6 flex items-center">
+              <ActivityIndicator size="large" color="#0286FF" />
+              <Text className="text-lg font-semibold text-gray-800 mt-3">
+                Signing In...
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </ScrollView>
   );

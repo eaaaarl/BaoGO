@@ -1,3 +1,4 @@
+import { AuthProvider } from "@/components/AuthProvider";
 import { store as ReduxStore } from "@/libs/redux/store";
 import { Stack } from "expo-router";
 import { Provider } from "react-redux";
@@ -11,7 +12,9 @@ export default function RootLayout() {
   return (
     <Provider store={ReduxStore}>
       <PersistGate loading={null} persistor={persistor}>
-        <Stack screenOptions={{ headerShown: false }} />
+        <AuthProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </AuthProvider>
       </PersistGate>
     </Provider>
   );

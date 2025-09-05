@@ -1,10 +1,11 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { SignUpPayload } from "./interface";
+import { SignInPayload, SignUpPayload } from "./interface";
 
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fakeBaseQuery(),
+  tagTypes: ["User", "Profile"],
   endpoints: (builder) => ({
     signUp: builder.mutation({
       queryFn: async (credentials: SignUpPayload) => {
@@ -53,8 +54,34 @@ export const authApi = createApi({
           return { error: { status: "CUSTOM_ERROR", error: error as string } };
         }
       },
+      invalidatesTags: ["User", "Profile"],
+    }),
+
+    signIn: builder.mutation({
+      queryFn: async (credentials: SignInPayload) => {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: credentials.email.trim().toLowerCase(),
+            password: credentials.password,
+          });
+
+          if (error) {
+            return { error: { status: "CUSTOM_ERROR", error: error.message } };
+          }
+
+          return {
+            data: {
+              user: data.user,
+              session: data.session,
+            },
+          };
+        } catch (error) {
+          return { error: { status: "CUSTOM_ERROR", error: error as string } };
+        }
+      },
+      invalidatesTags: ["User", "Profile"],
     }),
   }),
 });
 
-export const { useSignUpMutation } = authApi;
+export const { useSignUpMutation, useSignInMutation } = authApi;

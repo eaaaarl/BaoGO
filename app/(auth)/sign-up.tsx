@@ -49,7 +49,7 @@ export default function SignUp() {
 
       if (result) {
         Alert.alert('Success', 'Account created successfully!');
-        router.replace('/(tabs)/home');
+        router.replace('/(tabs)');
       } else {
         Alert.alert('Sign Up Error', 'Something went wrong');
       }
