@@ -11,7 +11,7 @@ const TabIcon = ({
   focused: boolean;
 }) => (
   <View
-    className={`w-14 h-14 rounded-full items-center my-auto  justify-center ${focused ? "bg-general-400" : "bg-transparent"
+    className={`w-14 h-14 rounded-full items-center my-auto justify-center ${focused ? "bg-general-400" : "bg-transparent"
       }`}
   >
     <Image
@@ -23,11 +23,10 @@ const TabIcon = ({
   </View>
 );
 
-// Custom tab button component to remove ripple effect
 const CustomTabButton = (props: any) => (
   <TouchableOpacity
     {...props}
-    activeOpacity={1} // This removes the opacity effect on press
+    activeOpacity={1}
     style={props.style}
   />
 );

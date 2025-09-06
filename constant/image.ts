@@ -4,15 +4,22 @@ import google from "@/assets/icons/google.png";
 import home from "@/assets/icons/home.png";
 import ride from "@/assets/icons/list.png";
 import lock from "@/assets/icons/lock.png";
+import out from "@/assets/icons/out.png";
 import person from "@/assets/icons/person.png";
+import point from "@/assets/icons/point.png";
 import profile from "@/assets/icons/profile.png";
+import search from "@/assets/icons/search.png";
+import to from "@/assets/icons/to.png";
 import baobaoAuth from "@/assets/images/bao-auth.png";
+import noResult from "@/assets/images/no-result.png";
 
 export const images = {
   baobaoAuth,
+  noResult,
 };
 
 export const icons = {
+  out,
   person,
   email,
   lock,
@@ -21,4 +28,7 @@ export const icons = {
   ride,
   chat,
   profile,
+  to,
+  point,
+  search,
 };
