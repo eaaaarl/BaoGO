@@ -1,12 +1,15 @@
+import GoogleTextInput from '@/components/GoogleTextInput';
 import Map from '@/components/Map';
 import RideCard from '@/components/RideCard';
 import { icons, images } from '@/constant/image';
-import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
-import { useAppSelector } from '@/libs/redux/hooks';
+import { useGetProfileUserQuery, useSignOutMutation } from '@/feature/auth/api/authApi';
+import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks';
 import { Ride } from '@/libs/utils';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
 
+import { setUserLocation } from '@/libs/redux/state/locationSlice';
+import * as Location from 'expo-location';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -112,9 +115,35 @@ const recentRides = [
 export default function Index() {
   const { user } = useAppSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
-  const handleSignOut = () => { }
   const handleDestinationPress = () => { }
 
+  const dispatch = useAppDispatch()
+  const [hasPermission, setHasPermission] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setHasPermission(false);
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+
+      const address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      dispatch(setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        address: address[0].street,
+      }))
+    })();
+  }, [dispatch])
+
+  const [signOut] = useSignOutMutation();
   const { data: profileUser } = useGetProfileUserQuery(user?.id as string);
 
   return (
@@ -151,18 +180,18 @@ export default function Index() {
                 Welcome {profileUser?.full_name}👋
               </Text>
               <TouchableOpacity
-                onPress={handleSignOut}
+                onPress={signOut}
                 className="justify-center items-center w-10 h-10 rounded-full bg-white"
               >
                 <Image source={icons.out} className="w-4 h-4" />
               </TouchableOpacity>
             </View>
 
-            {/* <GoogleTextInput
+            <GoogleTextInput
               icon={icons.search}
               containerStyle="bg-white shadow-md shadow-neutral-300"
               handlePress={handleDestinationPress}
-            /> */}
+            />
 
             <>
               <Text className="text-xl font-JakartaBold mt-5 mb-3">

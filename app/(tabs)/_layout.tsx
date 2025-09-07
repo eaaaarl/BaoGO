@@ -47,7 +47,7 @@ export default function Layout() {
           paddingBottom: Platform.OS === 'ios' ? 0 : insets.bottom,
           overflow: "hidden",
           marginHorizontal: 20,
-          marginBottom: Platform.OS === 'android' ? insets.bottom : 0,
+          marginBottom: Platform.OS === 'android' ? insets.bottom + 10 : 0,
           height: 78,
           display: "flex",
           justifyContent: "space-around",
