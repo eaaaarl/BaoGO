@@ -97,8 +97,23 @@ export const authApi = createApi({
         return { data: data };
       },
     }),
+
+    signOut: builder.mutation({
+      queryFn: async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          return { error: { status: "CUSTOM_ERROR", error: error.message } };
+        }
+        return { data: null };
+      },
+      invalidatesTags: ["User", "Profile"],
+    }),
   }),
 });
 
-export const { useSignUpMutation, useSignInMutation, useGetProfileUserQuery } =
-  authApi;
+export const {
+  useSignUpMutation,
+  useSignInMutation,
+  useGetProfileUserQuery,
+  useSignOutMutation,
+} = authApi;
