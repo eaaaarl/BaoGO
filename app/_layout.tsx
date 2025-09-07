@@ -1,4 +1,4 @@
-import { AuthProvider } from "@/components/AuthProvider";
+import AuthProvider from "@/components/AuthProvider";
 import { store as ReduxStore } from "@/libs/redux/store";
 import { Stack } from "expo-router";
 import { Provider } from "react-redux";

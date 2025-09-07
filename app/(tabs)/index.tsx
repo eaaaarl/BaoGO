@@ -2,7 +2,8 @@ import Map from '@/components/Map';
 import RideCard from '@/components/RideCard';
 import { icons, images } from '@/constant/image';
 import { useAppSelector } from '@/libs/redux/hooks';
-import React, { useState } from 'react';
+import { supabase } from '@/libs/supabase';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -110,11 +111,17 @@ const recentRides = [
 export default function Index() {
   const { user } = useAppSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
-
-
   const handleSignOut = () => { }
-
   const handleDestinationPress = () => { }
+
+  useEffect(() => {
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
+      //console.log(event, session);
+    });
+    return () => {
+      authListener.data.subscription.unsubscribe();
+    }
+  }, [])
 
   return (
     <SafeAreaView className='bg-general-500'>
