@@ -11,11 +11,13 @@ import profile from "@/assets/icons/profile.png";
 import search from "@/assets/icons/search.png";
 import to from "@/assets/icons/to.png";
 import baobaoAuth from "@/assets/images/bao-auth.png";
+import message from "@/assets/images/message.png";
 import noResult from "@/assets/images/no-result.png";
 
 export const images = {
   baobaoAuth,
   noResult,
+  message,
 };
 
 export const icons = {

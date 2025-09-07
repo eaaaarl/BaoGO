@@ -1,9 +1,10 @@
 import Map from '@/components/Map';
 import RideCard from '@/components/RideCard';
 import { icons, images } from '@/constant/image';
+import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
 import { useAppSelector } from '@/libs/redux/hooks';
-import { supabase } from '@/libs/supabase';
-import React, { useEffect, useState } from 'react';
+import { Ride } from '@/libs/utils';
+import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -114,19 +115,12 @@ export default function Index() {
   const handleSignOut = () => { }
   const handleDestinationPress = () => { }
 
-  useEffect(() => {
-    const authListener = supabase.auth.onAuthStateChange((event, session) => {
-      //console.log(event, session);
-    });
-    return () => {
-      authListener.data.subscription.unsubscribe();
-    }
-  }, [])
+  const { data: profileUser } = useGetProfileUserQuery(user?.id as string);
 
   return (
     <SafeAreaView className='bg-general-500'>
       <FlatList data={recentRides.slice(0, 5)}
-        renderItem={({ item }) => <RideCard ride={item} />}
+        renderItem={({ item }) => <RideCard ride={item as unknown as Ride} />}
         keyExtractor={(item, index) => index.toString()}
         className="px-5"
         keyboardShouldPersistTaps="handled"
@@ -154,7 +148,7 @@ export default function Index() {
           <>
             <View className="flex flex-row items-center justify-between my-5">
               <Text className="text-2xl font-JakartaExtraBold">
-                Welcome {user?.email}👋
+                Welcome {profileUser?.full_name}👋
               </Text>
               <TouchableOpacity
                 onPress={handleSignOut}
