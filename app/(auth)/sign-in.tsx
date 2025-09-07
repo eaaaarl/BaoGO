@@ -28,7 +28,11 @@ const SignIn = () => {
   }, [form.email, form.password, signIn]);
 
   return (
-    <ScrollView className="flex-1 bg-white">
+    <ScrollView
+      style={{ flex: 1, backgroundColor: 'white' }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      keyboardShouldPersistTaps="handled"
+    >
       <View className="flex-1 bg-white">
         <View className="relative w-full h-[250px]">
           <Image source={images.baobaoAuth} className="z-0 w-full h-[250px]" />
