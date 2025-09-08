@@ -112,11 +112,13 @@ const recentRides = [
   }
 ]
 
+
 export default function Index() {
   const { user } = useAppSelector((state) => state.auth);
+
   const loading = false;
-  const handleDestinationPress = ({ latitude, longitude, address }: { latitude: number, longitude: number, address: string }) => {
-    console.log('Destination', latitude, longitude, address)
+  const handleDestinationPress = (location: { latitude: number, longitude: number, address: string }) => {
+    console.log('Destination', location)
   }
 
   const dispatch = useAppDispatch()
