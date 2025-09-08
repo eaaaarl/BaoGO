@@ -13,7 +13,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     const authSessionListener = async () => {
       const { data, error } = await supabase.auth.getSession()
-      console.log('Initial session', data, error)
+      //console.log('Initial session', data, error)
 
       if (data.session?.user) {
         dispatch(setAuthState({ user: data.session.user, session: data.session }))
@@ -27,7 +27,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed:', event, session)
+        //console.log('Auth state changed:', event, session)
 
         if (session?.user) {
           dispatch(setAuthState({ user: session.user, session: session }))

@@ -2,16 +2,16 @@ import GoogleTextInput from '@/components/GoogleTextInput';
 import Map from '@/components/Map';
 import RideCard from '@/components/RideCard';
 import { icons, images } from '@/constant/image';
-import { useGetProfileUserQuery, useSignOutMutation } from '@/feature/auth/api/authApi';
+import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
 import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks';
+import { setUserLocation } from '@/libs/redux/state/locationSlice';
+import { supabase } from '@/libs/supabase';
 import { Ride } from '@/libs/utils';
+import * as Location from 'expo-location';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
-
-import { setUserLocation } from '@/libs/redux/state/locationSlice';
-import * as Location from 'expo-location';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 
 const recentRides = [
   {
@@ -114,36 +114,50 @@ const recentRides = [
 
 export default function Index() {
   const { user } = useAppSelector((state) => state.auth);
-  const [loading, setLoading] = useState(false);
-  const handleDestinationPress = () => { }
+  const loading = false;
+  const handleDestinationPress = ({ latitude, longitude, address }: { latitude: number, longitude: number, address: string }) => {
+    console.log('Destination', latitude, longitude, address)
+  }
 
   const dispatch = useAppDispatch()
   const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
+
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setHasPermission(false);
-        return;
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setHasPermission(false);
+          return;
+        }
+
+        let location = await Location.getCurrentPositionAsync({});
+
+        const address = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+
+        dispatch(setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          address: address[0].street
+        }))
+
+      } catch (error) {
+        console.log('Location error:', error);
       }
-
-      let location = await Location.getCurrentPositionAsync({});
-
-      const address = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      dispatch(setUserLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        address: address[0].street,
-      }))
     })();
-  }, [dispatch])
+  }, [dispatch, user])
 
-  const [signOut] = useSignOutMutation();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.replace('/(auth)/sign-in')
+  }
+
   const { data: profileUser } = useGetProfileUserQuery(user?.id as string);
 
   return (
@@ -180,7 +194,7 @@ export default function Index() {
                 Welcome {profileUser?.full_name}👋
               </Text>
               <TouchableOpacity
-                onPress={signOut}
+                onPress={handleSignOut}
                 className="justify-center items-center w-10 h-10 rounded-full bg-white"
               >
                 <Image source={icons.out} className="w-4 h-4" />
