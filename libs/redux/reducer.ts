@@ -1,5 +1,6 @@
 import { authApi } from "@/feature/auth/api/authApi";
 import { authReducer } from "@/libs/redux/state/authSlice";
+import { driverReducers } from "@/libs/redux/state/driverSlice";
 import { locationReducer } from "@/libs/redux/state/locationSlice";
 import { combineReducers } from "@reduxjs/toolkit";
 
@@ -7,6 +8,7 @@ const rootReducer = combineReducers({
   // SLICE
   location: locationReducer,
   auth: authReducer,
+  driver: driverReducers,
 
   // RTK QUERY
   [authApi.reducerPath]: authApi.reducer,
