@@ -18,7 +18,7 @@ export default function Home() {
         className='w-full flex justify-end items-end p-5'
         onPress={() => router.replace("/(auth)/sign-in")}
       >
-        <Text className='text-black text-md'>Skip</Text>
+        <Text className='font-semibold text-md'>Skip</Text>
       </TouchableOpacity>
 
       <Swiper

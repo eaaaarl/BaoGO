@@ -1,8 +1,7 @@
-import { Text, View } from "react-native";
-
 import { GoogleInputProps } from "@/types/type";
+import GooglePlacesTextInput from 'react-native-google-places-textinput';
 
-
+const googlePlacesKey = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
 
 const GoogleTextInput = ({
   icon,
@@ -11,13 +10,26 @@ const GoogleTextInput = ({
   textInputBackgroundColor,
   handlePress,
 }: GoogleInputProps) => {
+
   return (
-    <View
-      className={`flex flex-row items-center justify-center relative z-50 rounded-xl ${containerStyle}`}
-    >
-      <Text>Search</Text>
-    </View>
+    <GooglePlacesTextInput
+      apiKey={googlePlacesKey || ''}
+      fetchDetails={true}
+      placeHolderText="Where do you want to go?"
+      onPlaceSelect={(place: any) => {
+        const latitude = place?.details?.location?.latitude;
+        const longitude = place?.details?.location?.longitude;
+        const address = place?.details?.formattedAddress;
+
+        handlePress({
+          latitude,
+          longitude,
+          address,
+        });
+      }}
+    />
+
   );
 };
 
-export default GoogleTextInput;
+export default GoogleTextInput; 

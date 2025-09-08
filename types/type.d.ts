@@ -68,9 +68,7 @@ declare interface GoogleInputProps {
   containerStyle?: string;
   textInputBackgroundColor?: string;
   handlePress: ({
-    latitude,
-    longitude,
-    address,
+    place,
   }: {
     latitude: number;
     longitude: number;

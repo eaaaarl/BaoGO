@@ -15,12 +15,16 @@ const SignIn = () => {
     password: "",
   });
 
-
   const [signIn, { isLoading }] = useSignInMutation();
 
   const onSignInPress = useCallback(async () => {
     try {
-      await signIn({ email: form.email, password: form.password }).unwrap();
+      await signIn(
+        {
+          email: form.email,
+          password: form.password
+        }
+      ).unwrap();
       router.replace('/(tabs)');
     } catch (error) {
       Alert.alert('Sign In Error', error as string);
@@ -42,6 +46,12 @@ const SignIn = () => {
         </View>
 
         <View className="p-5">
+          {/* <Link href="/welcome">
+            <Text className="text-lg text-center text-general-200 mt-10">
+              Skip
+            </Text>
+          </Link> */}
+
           <InputField
             label="Email"
             placeholder="Enter email"
