@@ -4,6 +4,7 @@ import { useAppSelector } from '@/libs/redux/hooks';
 import { MarkerData } from '@/types/type';
 import React, { useEffect, useState } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapViewDirections from "react-native-maps-directions";
 
 const calculateRegion = ({
   userLatitude,
@@ -91,6 +92,8 @@ export const drivers = [
   }
 ]
 
+const directionsAPI = process.env.EXPO_PUBLIC_GOOGLE_DIRECTIONS_API_KEY;
+
 export default function Map() {
 
   const {
@@ -102,7 +105,6 @@ export default function Map() {
   const { selectedDriver } = useAppSelector((state) => state.driver)
 
   const [markers, setMarkers] = useState<MarkerData[]>([]);
-
 
   useEffect(() => {
     if (Array.isArray(drivers)) {
@@ -147,6 +149,33 @@ export default function Map() {
           }
         />
       ))}
+
+      {destinationLatitude && destinationLongitude && (
+        <>
+          <Marker
+            key="destination"
+            coordinate={{
+              latitude: destinationLatitude,
+              longitude: destinationLongitude,
+            }}
+            title="Destination"
+            image={icons.pin}
+          />
+          <MapViewDirections
+            origin={{
+              latitude: userLatitude!,
+              longitude: userLongitude!,
+            }}
+            destination={{
+              latitude: destinationLatitude,
+              longitude: destinationLongitude,
+            }}
+            apikey={directionsAPI!}
+            strokeColor="#0286FF"
+            strokeWidth={2}
+          />
+        </>
+      )}
     </MapView>
   );
 }
