@@ -4,7 +4,8 @@ import RideCard from '@/components/RideCard';
 import { icons, images } from '@/constant/image';
 import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
 import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks';
-import { setDestinationLocation, setUserLocation } from '@/libs/redux/state/locationSlice';
+import { clearSelectedDriver } from '@/libs/redux/state/driverSlice';
+import { clearLocation, setDestinationLocation, setUserLocation } from '@/libs/redux/state/locationSlice';
 import { supabase } from '@/libs/supabase';
 import { Ride } from '@/libs/utils';
 import * as Location from 'expo-location';
@@ -156,6 +157,8 @@ export default function Index() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
+    dispatch(clearSelectedDriver())
+    dispatch(clearLocation())
     router.replace('/(auth)/sign-in')
   }
 
