@@ -4,7 +4,7 @@ import RideCard from '@/components/RideCard';
 import { icons, images } from '@/constant/image';
 import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
 import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks';
-import { setUserLocation } from '@/libs/redux/state/locationSlice';
+import { setDestinationLocation, setUserLocation } from '@/libs/redux/state/locationSlice';
 import { supabase } from '@/libs/supabase';
 import { Ride } from '@/libs/utils';
 import * as Location from 'expo-location';
@@ -112,17 +112,16 @@ const recentRides = [
   }
 ]
 
-
 export default function Index() {
+  const dispatch = useAppDispatch()
+
   const { user } = useAppSelector((state) => state.auth);
+  const [hasPermission, setHasPermission] = useState(false);
 
   const loading = false;
-  const handleDestinationPress = (location: { latitude: number, longitude: number, address: string }) => {
-    console.log('Destination', location)
-  }
 
-  const dispatch = useAppDispatch()
-  const [hasPermission, setHasPermission] = useState(false);
+  const { data: profileUser } = useGetProfileUserQuery(user?.id as string);
+
 
   useEffect(() => {
     if (!user) return;
@@ -160,7 +159,16 @@ export default function Index() {
     router.replace('/(auth)/sign-in')
   }
 
-  const { data: profileUser } = useGetProfileUserQuery(user?.id as string);
+  const handleDestinationPress = (location:
+    {
+      latitude: number,
+      longitude: number,
+      address: string
+    }
+  ) => {
+    dispatch(setDestinationLocation(location))
+    router.push('/(root)/find-ride')
+  }
 
   return (
     <SafeAreaView className='bg-general-500'>

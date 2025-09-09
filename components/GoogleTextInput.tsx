@@ -16,11 +16,11 @@ const GoogleTextInput = ({
       apiKey={googlePlacesKey || ''}
       fetchDetails={true}
       placeHolderText="Where do you want to go?"
+      value={initialLocation}
       onPlaceSelect={(place: any) => {
         const latitude = place?.details?.location?.latitude;
         const longitude = place?.details?.location?.longitude;
         const address = place?.details?.formattedAddress;
-
         handlePress({
           latitude,
           longitude,

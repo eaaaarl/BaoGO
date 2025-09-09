@@ -130,7 +130,6 @@ export default function Map() {
       provider={PROVIDER_GOOGLE}
       style={{ flex: 1, width: '100%', height: '100%' }}
       showsUserLocation={true}
-
       userInterfaceStyle='light'
       mapType='standard'
       initialRegion={region}
