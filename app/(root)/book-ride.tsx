@@ -1,8 +1,10 @@
+import CustomButton from '@/components/CustomButton'
 import { drivers } from '@/components/Map'
 import RideLayout from '@/components/RideLayout'
 import { icons } from '@/constant/image'
 import { useAppSelector } from '@/libs/redux/hooks'
 import { formatTime } from '@/libs/utils'
+import { router } from 'expo-router'
 import React from 'react'
 import { Image, Text, View } from 'react-native'
 
@@ -15,7 +17,7 @@ export default function BookRide() {
   )[0];
 
   return (
-    <RideLayout title="Book Ride">
+    <RideLayout title="Book Ride" snapPoints={["95%"]}>
       <>
         <Text className="text-xl font-JakartaSemiBold mb-3">
           Ride Information
@@ -83,6 +85,13 @@ export default function BookRide() {
             </Text>
           </View>
         </View>
+
+        <CustomButton
+          title='Confirm Ride'
+          className='my-10'
+          onPress={() => router.push('/(tabs)')}
+        />
+
       </>
     </RideLayout>
   )
