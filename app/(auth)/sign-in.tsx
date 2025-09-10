@@ -15,7 +15,29 @@ const SignIn = () => {
   });
   const [signIn, { isLoading }] = useSignInMutation();
 
+  const validateForm = () => {
+    if (!form.email.trim()) {
+      Alert.alert('Validation Error', 'Please enter your email')
+      return false
+    }
+    if (!form.email.includes('@')) {
+      Alert.alert('Validation Error', 'Please enter a valid email')
+      return false
+    }
+    if (form.password.length < 6) {
+      Alert.alert('Validation Error', 'Password must be at least 6 characters')
+      return false
+    }
+    if (!role || (role !== 'driver' && role !== 'rider')) {
+      Alert.alert('Error', 'Please select a valid role (Driver or Rider)')
+      return false
+    }
+    return true
+  }
+
   const onSignInPress = useCallback(async () => {
+    if (!validateForm()) return;
+
     try {
       await signIn({
         email: form.email,
