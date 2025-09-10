@@ -13,7 +13,7 @@ const ConfirmRide = () => {
   const { selectedDriver } = useAppSelector((state) => state.driver)
 
   return (
-    <RideLayout title={"Choose a Rider"} snapPoints={["65%", "85%"]}>
+    <RideLayout title={"Choose a Rider"} snapPoints={["80%"]}>
       <FlatList
         data={drivers}
         keyExtractor={(item, index) => index.toString()}
