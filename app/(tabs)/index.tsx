@@ -8,10 +8,11 @@ import { clearSelectedDriver } from '@/libs/redux/state/driverSlice';
 import { clearLocation, setDestinationLocation, setUserLocation } from '@/libs/redux/state/locationSlice';
 import { supabase } from '@/libs/supabase';
 import { Ride } from '@/libs/utils';
+import EvilIcons from '@expo/vector-icons/EvilIcons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const recentRides = [
@@ -114,68 +115,108 @@ const recentRides = [
 ]
 
 export default function Index() {
-  const dispatch = useAppDispatch()
-
+  const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+  const { userAddress } = useAppSelector((state) => state.location);
+
   const [hasPermission, setHasPermission] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   const loading = false;
-
   const { data: profileUser } = useGetProfileUserQuery(user?.id as string);
 
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setHasPermission(status === 'granted');
+      return status === 'granted';
+    } catch (error) {
+      console.log('Permission error:', error);
+      return false;
+    }
+  };
 
-  useEffect(() => {
+  const getCurrentLocation = useCallback(async () => {
     if (!user) return;
 
-    (async () => {
-      try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setHasPermission(false);
-          return;
-        }
-
-        let location = await Location.getCurrentPositionAsync({});
-
-        const address = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-
-        dispatch(setUserLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          address: address[0].street
-        }))
-
-      } catch (error) {
-        console.log('Location error:', error);
+    setIsLoadingLocation(true);
+    try {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) {
+        Alert.alert(
+          'Location Permission Required',
+          'Please enable location permissions to see your current location and find nearby rides.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Location.requestForegroundPermissionsAsync() }
+          ]
+        );
+        return;
       }
-    })();
-  }, [dispatch, user])
 
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      dispatch(setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        address: address[0]?.street || 'Unknown location'
+      }));
+
+    } catch (error) {
+      console.log('Location error:', error);
+      Alert.alert(
+        'Location Error',
+        'Unable to get your current location. Please try again or check your location settings.'
+      );
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    if (user) {
+      getCurrentLocation();
+    }
+  }, [user, getCurrentLocation]);
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await getCurrentLocation();
+    setTimeout(() => setIsRefreshing(false), 500);
+  }, [getCurrentLocation]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    dispatch(clearSelectedDriver())
-    dispatch(clearLocation())
-    router.replace('/(auth)/sign-in')
-  }
+    await supabase.auth.signOut();
+    dispatch(clearSelectedDriver());
+    dispatch(clearLocation());
+    router.replace('/(auth)/sign-in');
+  };
 
-  const handleDestinationPress = (location:
-    {
-      latitude: number,
-      longitude: number,
-      address: string
-    }
-  ) => {
-    dispatch(setDestinationLocation(location))
-    router.push('/(root)/find-ride')
-  }
+  const handleDestinationPress = (location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  }) => {
+    dispatch(setDestinationLocation(location));
+    router.push('/(root)/find-ride');
+  };
+
+  const handleManualRefresh = () => {
+    getCurrentLocation();
+  };
 
   return (
     <SafeAreaView className='bg-general-500'>
-      <FlatList data={recentRides.slice(0, 5)}
+      <FlatList
+        data={recentRides.slice(0, 5)}
         renderItem={({ item }) => <RideCard ride={item as unknown as Ride} />}
         keyExtractor={(item, index) => index.toString()}
         className="px-5"
@@ -183,6 +224,16 @@ export default function Index() {
         contentContainerStyle={{
           paddingBottom: 100,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={['#000']} // Android
+            tintColor="#000" // iOS
+            title="Pull to refresh location..." // iOS
+            titleColor="#000" // iOS
+          />
+        }
         ListEmptyComponent={() => (
           <View className="flex flex-col items-center justify-center">
             {!loading ? (
@@ -221,11 +272,48 @@ export default function Index() {
             />
 
             <>
-              <Text className="text-xl font-JakartaBold mt-5 mb-3">
-                Your current location
-              </Text>
+              <View className="flex flex-row items-center justify-between mt-5 mb-3">
+                <Text className="text-xl font-JakartaBold">
+                  Your current location
+                </Text>
+                <TouchableOpacity
+                  onPress={handleManualRefresh}
+                  disabled={isLoadingLocation}
+                  className="flex flex-row items-center justify-center bg-white px-3 py-2 rounded-full shadow-sm"
+                >
+                  {isLoadingLocation ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <EvilIcons className='mb-2' name="refresh" size={24} color="black" />
+                  )}
+                  <Text className="text-sm font-semibold">
+                    {isLoadingLocation ? 'Updating...' : 'Refresh'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <View className="flex flex-row items-center bg-transparent h-[300px]">
-                <Map />
+                {userAddress ? (
+                  <Map />
+                ) : (
+                  <View className="flex-1 justify-center items-center rounded-lg">
+                    {isLoadingLocation ? (
+                      <>
+                        <ActivityIndicator size="large" color="#000" />
+                      </>
+                    ) : (
+                      <>
+                        <Text className="text-sm text-gray-600 mb-2 font-semibold">Location not available</Text>
+                        <TouchableOpacity
+                          onPress={handleManualRefresh}
+                          className="bg-black px-4 py-2 rounded-full"
+                        >
+                          <Text className="text-white text-sm font-semibold">Enable Location</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                )}
               </View>
             </>
 
@@ -236,5 +324,5 @@ export default function Index() {
         }
       />
     </SafeAreaView>
-  )
+  );
 }
