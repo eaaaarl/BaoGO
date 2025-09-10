@@ -3,12 +3,13 @@ import InputField from '@/components/InputFields'
 import OAuth from '@/components/OAuth'
 import { icons, images } from '@/constant/image'
 import { useSignUpMutation } from '@/feature/auth/api/authApi'
-import { Link, router } from 'expo-router'
+import { Link, router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function SignUp() {
+  const { role } = useLocalSearchParams()
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -32,6 +33,10 @@ export default function SignUp() {
       Alert.alert('Validation Error', 'Password must be at least 6 characters')
       return false
     }
+    if (!role || (role !== 'driver' && role !== 'rider')) {
+      Alert.alert('Error', 'Please select a valid role (Driver or Rider)')
+      return false
+    }
     return true
   }
 
@@ -42,22 +47,34 @@ export default function SignUp() {
     if (!validateForm()) return;
 
     try {
-      const result = await signUp({
+
+      await signUp({
         email: form.email,
         password: form.password,
         full_name: form.name
       }).unwrap();
 
-      if (result) {
-        Alert.alert('Success', 'Account created successfully!');
-        router.replace('/(tabs)');
+
+      if (role === 'driver') {
+        //router.replace('/(driver)/dashboard');
+      } else if (role === 'rider') {
+        router.replace('/(tabs)/home');
       } else {
-        Alert.alert('Sign Up Error', 'Something went wrong');
+        Alert.alert('Success', 'Account created successfully!');
+        router.replace(`/sign-in?role=${role}`);
       }
 
+
     } catch (error) {
+      console.error('Sign up error:', error);
       Alert.alert('Sign Up Error', error as string);
     }
+  };
+
+  const getRoleDisplayText = () => {
+    if (role === 'driver') return 'Driver';
+    if (role === 'rider') return 'Rider';
+    return '';
   };
 
   return (
@@ -74,12 +91,20 @@ export default function SignUp() {
           <View className="flex-1 bg-white">
             <View className="relative w-full h-[250px]">
               <Image source={images.baobaoAuth} className="z-0 w-full h-[250px]" />
-              <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
-                Create Your Account
+              <Text className="text-2xl text-black font-semibold absolute bottom-5 left-5">
+                Create Your {getRoleDisplayText()} Account
               </Text>
             </View>
 
             <View className="p-5">
+              {role && (
+                <View className="bg-blue-50 p-3 rounded-lg mb-4">
+                  <Text className="text-sm text-blue-600 text-center">
+                    Signing up as: <Text className="font-semibold">{getRoleDisplayText()}</Text>
+                  </Text>
+                </View>
+              )}
+
               <InputField
                 label="Full Name"
                 placeholder="Enter your full name"
@@ -110,7 +135,7 @@ export default function SignUp() {
               />
 
               <CustomButton
-                title={isLoading ? "Creating Account..." : "Sign Up"}
+                title={isLoading ? "Creating Account..." : `Create ${getRoleDisplayText()} Account`}
                 onPress={onSignUpPress}
                 className="mt-6"
                 disabled={isLoading}
@@ -119,11 +144,26 @@ export default function SignUp() {
               <OAuth />
 
               <Link
-                href="/sign-in"
+                href={{
+                  pathname: '/sign-in',
+                  params: { role: role }
+                }}
+                asChild
                 className="text-lg text-center text-general-200 mt-10"
               >
                 Already have an account?{" "}
                 <Text className="text-primary-500">Log In</Text>
+              </Link>
+
+              <Link
+                href={{
+                  pathname: '/user-selection'
+                }}
+                asChild
+                className="text-sm text-center text-gray-500 mt-4"
+              >
+                Want to sign up as a different role?{" "}
+                <Text className="text-primary-500">Change Role</Text>
               </Link>
             </View>
           </View>
