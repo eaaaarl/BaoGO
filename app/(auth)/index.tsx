@@ -56,7 +56,7 @@ export default function Home() {
           title={isLastSlide ? "Get Started" : "Next"}
           onPress={() =>
             isLastSlide
-              ? router.replace("/(auth)/sign-up")
+              ? router.replace("/(auth)/user-selection")
               : swiperRef.current?.scrollBy(1)
           }
           className="w-full "

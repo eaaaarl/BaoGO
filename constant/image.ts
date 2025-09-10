@@ -19,13 +19,17 @@ import star from "@/assets/icons/star.png";
 import target from "@/assets/icons/target.png";
 import to from "@/assets/icons/to.png";
 import baobaoAuth from "@/assets/images/bao-auth.png";
+import baobaoDriver from "@/assets/images/bg-baobao.png";
 import message from "@/assets/images/message.png";
 import noResult from "@/assets/images/no-result.png";
+import onboarding2 from "@/assets/images/onboarding2.png";
 
 export const images = {
   baobaoAuth,
+  onboarding2,
   noResult,
   message,
+  baobaoDriver,
 };
 
 export const icons = {
