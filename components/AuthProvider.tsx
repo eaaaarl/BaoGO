@@ -19,7 +19,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         dispatch(setAuthState({ user: data.session.user, session: data.session }))
       } else {
         dispatch(clearAuth())
-        router.replace('/(auth)/sign-in')
+        router.replace('/(auth)')
       }
     }
 
@@ -32,7 +32,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         if (session?.user) {
           dispatch(setAuthState({ user: session.user, session: session }))
           if (event === 'SIGNED_IN') {
-            router.replace('/(tabs)')
+            router.replace('/(tabs)/home')
           }
         } else {
           dispatch(clearAuth())
