@@ -162,11 +162,10 @@ export default function Index() {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       });
-
       dispatch(setUserLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        address: address[0]?.street || 'Unknown location'
+        address: address[0]?.street || address[0]?.city || address[0]?.name || 'Unknown location'
       }));
 
     } catch (error) {
@@ -196,7 +195,7 @@ export default function Index() {
     await supabase.auth.signOut();
     dispatch(clearSelectedDriver());
     dispatch(clearLocation());
-    router.replace('/(auth)/sign-in');
+    router.replace('/(auth)/user-selection');
   };
 
   const handleDestinationPress = (location: {

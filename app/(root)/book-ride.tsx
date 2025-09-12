@@ -89,7 +89,7 @@ export default function BookRide() {
         <CustomButton
           title='Confirm Ride'
           className='my-10'
-          onPress={() => router.push('/(tabs)')}
+          onPress={() => router.push('/(tabs)/home')}
         />
 
       </>

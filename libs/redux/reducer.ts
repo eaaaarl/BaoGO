@@ -2,6 +2,7 @@ import { authApi } from "@/feature/auth/api/authApi";
 import { authReducer } from "@/libs/redux/state/authSlice";
 import { driverReducers } from "@/libs/redux/state/driverSlice";
 import { locationReducer } from "@/libs/redux/state/locationSlice";
+import { userRoleReducer } from "@/libs/redux/state/userRoleSlice";
 import { combineReducers } from "@reduxjs/toolkit";
 
 const rootReducer = combineReducers({
@@ -9,6 +10,7 @@ const rootReducer = combineReducers({
   location: locationReducer,
   auth: authReducer,
   driver: driverReducers,
+  userRole: userRoleReducer,
 
   // RTK QUERY
   [authApi.reducerPath]: authApi.reducer,

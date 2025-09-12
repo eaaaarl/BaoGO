@@ -27,18 +27,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        //console.log('Auth state changed:', event, session)
+        //console.log('Auth state changed:', event)
 
         if (session?.user) {
           dispatch(setAuthState({ user: session.user, session: session }))
-          if (event === 'SIGNED_IN') {
-            router.replace('/(tabs)/home')
-          }
+          router.replace('/(tabs)/home')
+
         } else {
           dispatch(clearAuth())
-          if (event === 'SIGNED_OUT') {
-            router.replace('/(auth)/sign-in')
-          }
+          router.replace('/(auth)/sign-in')
         }
       }
     );

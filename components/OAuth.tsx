@@ -6,7 +6,7 @@ import { icons } from "@/constant/image";
 const OAuth = () => {
 
   const handleGoogleSignIn = async () => {
-
+    console.log("Google Sign In")
   };
 
   return (
