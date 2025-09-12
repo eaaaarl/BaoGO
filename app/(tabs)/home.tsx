@@ -8,7 +8,6 @@ import { clearSelectedDriver } from '@/libs/redux/state/driverSlice';
 import { clearLocation, setDestinationLocation, setUserLocation } from '@/libs/redux/state/locationSlice';
 import { supabase } from '@/libs/supabase';
 import { Ride } from '@/libs/utils';
-import EvilIcons from '@expo/vector-icons/EvilIcons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -276,20 +275,6 @@ export default function Index() {
                 <Text className="text-xl font-JakartaBold">
                   Your current location
                 </Text>
-                <TouchableOpacity
-                  onPress={handleManualRefresh}
-                  disabled={isLoadingLocation}
-                  className="flex flex-row items-center justify-center bg-white px-3 py-2 rounded-full shadow-sm"
-                >
-                  {isLoadingLocation ? (
-                    <ActivityIndicator size="small" color="#000" />
-                  ) : (
-                    <EvilIcons className='mb-2' name="refresh" size={24} color="black" />
-                  )}
-                  <Text className="text-sm font-semibold">
-                    {isLoadingLocation ? 'Updating...' : 'Refresh'}
-                  </Text>
-                </TouchableOpacity>
               </View>
 
               <View className="flex flex-row items-center bg-transparent h-[300px]">

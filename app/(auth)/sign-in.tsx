@@ -44,17 +44,20 @@ const SignIn = () => {
         password: form.password,
       }).unwrap();
 
-      if (role === 'driver') {
-        // router.replace('/(tabs)/home');
-      } else if (role === 'rider') {
-        router.replace('/(tabs)/home');
-      } else {
-        router.replace('/(auth)/user-selection');
-      }
+      /*  if (role === 'driver') {
+         // router.replace('/(tabs)/home');
+       } else if (role === 'rider') {
+         router.replace('/(tabs)/home');
+       } else {
+         router.replace('/(auth)/user-selection');
+       } */
+      router.replace('/(tabs)/home');
     } catch (error) {
-      Alert.alert('Sign In Error', error as string);
+      console.log(error);
+      //Alert.alert('Sign In Error', error as string);
     }
-  }, [form.email, form.password, role, signIn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.email, form.password, /* role, */ signIn]);
 
   const getRoleDisplayText = () => {
     if (role === 'driver') return 'Driver';
