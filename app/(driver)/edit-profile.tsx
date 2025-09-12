@@ -1,6 +1,6 @@
 import CustomButton from '@/components/CustomButton';
 import InputField from '@/components/InputFields';
-import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
+import { authApi, useGetProfileUserQuery } from '@/feature/auth/api/authApi';
 import { useGetDriverProfileQuery, useUpdateDriverProfileMutation } from '@/feature/driver/api/driverApi';
 import { UpdateDriverProfilePayload } from '@/feature/driver/api/interface';
 import { useAppSelector } from '@/libs/redux/hooks';
@@ -57,14 +57,15 @@ export default function EditProfile() {
         vehicle_plate_number: form.vehiclePlateNumber,
         vehicle_year: form.vehicleYear,
       };
-      const response = await updateDriverProfile(payload);
-      console.log('response', response);
+      await updateDriverProfile(payload);
+
+      authApi.util.invalidateTags(['Profile']);
+
+      router.replace('/(driver)/profile');
     } catch (error) {
       console.log('error', error);
     }
   };
-
-  console.log('form', JSON.stringify(form.vehicleYear, null, 2))
 
   return (
     <ScrollView
@@ -72,7 +73,6 @@ export default function EditProfile() {
       contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom }}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Header */}
       <View
         className="flex-row items-center gap-2 bg-white px-4 pt-4 pb-6 border-b border-gray-100"
         style={{ paddingTop: insets.top }}

@@ -6,26 +6,28 @@ import React, { useEffect } from 'react'
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch()
-
   useEffect(() => {
+
     const checkInitialSession = async () => {
-      const { data } = await supabase.auth.getSession()
+      try {
+        const { data } = await supabase.auth.getSession()
 
-      if (data.session?.user) {
-        const role = data.session.user.user_metadata?.user_role
+        if (data.session?.user) {
+          const role = data.session.user.user_metadata?.user_role
+          dispatch(setAuthState({ user: data.session.user, session: data.session }))
 
-        dispatch(setAuthState({ user: data.session.user, session: data.session }))
-
-        if (role === 'Driver') {
-          router.replace('/(driver)/home')
-        } else if (role === 'Rider') {
-          router.replace('/(tabs)/home')
+          if (role === 'Driver') {
+            router.replace('/(driver)/home')
+          } else if (role === 'Rider') {
+            router.replace('/(tabs)/home')
+          } else {
+            router.replace('/(auth)/sign-in')
+          }
         } else {
-          router.replace('/(auth)/sign-in')
+          dispatch(clearAuth())
         }
-      } else {
-        dispatch(clearAuth())
-        router.replace('/(auth)/sign-in')
+      } catch (error) {
+        console.error('Error checking initial session:', error)
       }
     }
 
@@ -52,7 +54,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [dispatch])
 
   return <>{children}</>

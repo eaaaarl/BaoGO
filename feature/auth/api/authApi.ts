@@ -98,6 +98,7 @@ export const authApi = createApi({
 
         return { data: data };
       },
+      providesTags: ["Profile"],
     }),
 
     signOut: builder.mutation({

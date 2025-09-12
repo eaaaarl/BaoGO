@@ -15,7 +15,7 @@ const ProfileRow = ({
     onPress={onPress}
     disabled={!onPress}
   >
-    <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${danger ? 'bg-red-100' : 'bg-gray-100'}`}>
+    <View className={`w-10 h-10 rounded-full items-center justify-center mr-8 ${danger ? 'bg-red-100' : 'bg-gray-100'}`}>
       <Ionicons name={icon as any} size={20} color={danger ? '#EF4444' : '#6B7280'} />
     </View>
     <View className="flex-1">

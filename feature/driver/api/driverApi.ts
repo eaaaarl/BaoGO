@@ -17,6 +17,14 @@ export const driverApi = createApi({
             },
           });
 
+          // update user profile
+          await supabase
+            .from("profiles")
+            .update({
+              full_name: payload.full_name,
+            })
+            .eq("id", payload.id);
+
           // upsert driver profile
           const { data, error } = await supabase
             .from("driver_profiles")
