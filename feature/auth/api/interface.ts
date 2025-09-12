@@ -2,6 +2,7 @@ export interface SignUpPayload {
   full_name: string;
   email: string;
   password: string;
+  user_role: string;
 }
 
 export interface SignInPayload {
