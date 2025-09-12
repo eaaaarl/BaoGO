@@ -1,6 +1,3 @@
-
-
-
 import { useAppDispatch } from '@/libs/redux/hooks'
 import { clearAuth, setAuthState } from '@/libs/redux/state/authSlice'
 import { supabase } from '@/libs/supabase'
@@ -12,9 +9,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const authSessionListener = async () => {
-      const { data, error } = await supabase.auth.getSession()
+      const { data } = await supabase.auth.getSession()
       //console.log('Initial session', data, error)
-
       if (data.session?.user) {
         dispatch(setAuthState({ user: data.session.user, session: data.session }))
       } else {
@@ -27,12 +23,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        //console.log('Auth state changed:', event)
-
-        if (session?.user) {
+        //console.log('Auth state changed:', event, session)
+        if (session?.user?.user_metadata?.user_role === 'Driver') {
+          dispatch(setAuthState({ user: session.user, session: session }))
+          router.replace('/(driver)/home')
+        } else if (session?.user?.user_metadata?.user_role === 'Rider') {
           dispatch(setAuthState({ user: session.user, session: session }))
           router.replace('/(tabs)/home')
-
         } else {
           dispatch(clearAuth())
           router.replace('/(auth)/sign-in')
