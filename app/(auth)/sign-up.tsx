@@ -4,7 +4,7 @@ import OAuth from '@/components/OAuth'
 import { icons, images } from '@/constant/image'
 import { useSignUpMutation } from '@/feature/auth/api/authApi'
 import { useAppSelector } from '@/libs/redux/hooks'
-import { Link } from 'expo-router'
+import { Link, router } from 'expo-router'
 import { useState } from 'react'
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -15,6 +15,7 @@ export default function SignUp() {
     name: "",
     email: "",
     password: "",
+    phone: "",
   })
 
   const bottmInsets = useSafeAreaInsets()
@@ -58,16 +59,14 @@ export default function SignUp() {
       }).unwrap();
 
 
-      /*  if (userRole === 'Driver') {
-         //router.replace('/(driver)/dashboard');
-       } else if (userRole === 'Rider') {
-         router.replace('/(tabs)/home');
-       } else {
-         Alert.alert('Success', 'Account created successfully!');
-         router.replace(`/(auth)/sign-in`);
-       } */
-
-      // router.replace('/(tabs)/home');
+      if (userRole === 'Driver') {
+        router.replace('/(driver)/home');
+      } else if (userRole === 'Rider') {
+        router.replace('/(tabs)/home');
+      } else {
+        Alert.alert('Success', 'Account created successfully!');
+        router.replace(`/(auth)/sign-in`);
+      }
 
     } catch (error) {
       console.error('Sign up error:', error);

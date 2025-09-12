@@ -61,28 +61,25 @@ const SignIn = () => {
         password: form.password,
       }).unwrap();
 
-      /*  if (role === 'driver') {
-         // router.replace('/(tabs)/home');
-       } else if (role === 'rider') {
-         router.replace('/(tabs)/home');
-       } else {
-         router.replace('/(auth)/user-selection');
-       } */
-      router.replace('/(tabs)/home');
+      if (userRole === 'Driver') {
+        router.replace('/(driver)/home');
+      } else if (userRole === 'Rider') {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/(auth)/user-selection');
+      }
+
     } catch (error) {
       console.log(error);
-      //Alert.alert('Sign In Error', error as string);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.email, form.password, /* role, */ signIn]);
+  }, [form.email, form.password, userRole, signIn]);
 
   const getRoleDisplayText = () => {
     if (userRole === 'Driver') return 'Driver';
     if (userRole === 'Rider') return 'Rider';
     return '';
   };
-
-  console.log(userRole)
 
   return (
     <ScrollView
@@ -121,13 +118,15 @@ const SignIn = () => {
             className="mt-6"
           />
           <OAuth />
-          <Link
-            href={`/(auth)/sign-up`}
-            className="text-lg text-center text-general-200 mt-10"
-          >
-            Don&apos;t have an account?{" "}
-            <Text className="text-primary-500">Sign Up</Text>
-          </Link>
+          <View className="flex-row justify-center items-center mt-10">
+            <Text className="text-lg text-general-200">Don&apos;t have an account? </Text>
+            <Link
+              href={`/(auth)/sign-up`}
+              className=""
+            >
+              <Text className="text-lg text-primary-500 underline font-medium">Sign Up</Text>
+            </Link>
+          </View>
         </View>
         {isLoading && (
           <View className="absolute inset-0 bg-black/50 flex-1 justify-center items-center z-50">

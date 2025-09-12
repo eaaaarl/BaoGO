@@ -6,41 +6,58 @@ import React, { useEffect } from 'react'
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch()
-
   useEffect(() => {
-    const authSessionListener = async () => {
-      const { data } = await supabase.auth.getSession()
-      //console.log('Initial session', data, error)
-      if (data.session?.user) {
-        dispatch(setAuthState({ user: data.session.user, session: data.session }))
-      } else {
-        dispatch(clearAuth())
-        router.replace('/(auth)')
+
+    const checkInitialSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession()
+
+        if (data.session?.user) {
+          const role = data.session.user.user_metadata?.user_role
+          dispatch(setAuthState({ user: data.session.user, session: data.session }))
+
+          if (role === 'Driver') {
+            router.replace('/(driver)/home')
+          } else if (role === 'Rider') {
+            router.replace('/(tabs)/home')
+          } else {
+            router.replace('/(auth)/sign-in')
+          }
+        } else {
+          dispatch(clearAuth())
+        }
+      } catch (error) {
+        console.error('Error checking initial session:', error)
       }
     }
 
-    authSessionListener()
+    checkInitialSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        //console.log('Auth state changed:', event, session)
-        if (session?.user?.user_metadata?.user_role === 'Driver') {
-          dispatch(setAuthState({ user: session.user, session: session }))
-          router.replace('/(driver)/home')
-        } else if (session?.user?.user_metadata?.user_role === 'Rider') {
-          dispatch(setAuthState({ user: session.user, session: session }))
-          router.replace('/(tabs)/home')
+
+        if (session?.user) {
+          const role = session.user.user_metadata?.user_role
+          dispatch(setAuthState({ user: session.user, session }))
+
+          if (role === 'Driver') {
+            router.replace('/(driver)/home')
+          } else if (role === 'Rider') {
+            router.replace('/(tabs)/home')
+          } else {
+            router.replace('/(auth)/sign-in')
+          }
         } else {
           dispatch(clearAuth())
           router.replace('/(auth)/sign-in')
         }
       }
-    );
+    )
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [dispatch])
 
-  return (
-    <>{children}</>
-  )
+  return <>{children}</>
 }
