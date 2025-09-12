@@ -74,6 +74,17 @@ export default function DriverLayout() {
           tabBarButton: (props) => <CustomTabButton {...props} />,
         }}
       />
+
+
+      {/* Hide Screen edit profile */}
+      <Tabs.Screen
+        name="edit-profile"
+        options={{
+          href: null,
+          headerShown: false,
+          tabBarStyle: { display: "none" },
+        }}
+      />
     </Tabs>
   );
 }
