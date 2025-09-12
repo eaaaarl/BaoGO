@@ -1,9 +1,12 @@
 import { images } from '@/constant/image';
+import { useAppDispatch } from '@/libs/redux/hooks';
+import { setUserRole } from '@/libs/redux/state/userRoleSlice';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function UserSelection() {
+  const dispatch = useAppDispatch();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   const handleRoleSelect = (role: string) => {
@@ -12,12 +15,8 @@ export default function UserSelection() {
 
   const handleContinue = () => {
     if (selectedRole) {
-      router.push({
-        pathname: '/(auth)/sign-in',
-        params: {
-          role: selectedRole
-        }
-      })
+      dispatch(setUserRole(selectedRole as "Driver" | "Rider" | "Guest"));
+      router.replace('/(auth)/sign-in');
     }
   };
 
@@ -37,15 +36,15 @@ export default function UserSelection() {
 
       <View className='flex-1 justify-center gap-5'>
         <TouchableOpacity
-          className={`bg-white rounded-2xl p-6 border-2 ${selectedRole === 'rider'
+          className={`bg-white rounded-2xl p-6 border-2 ${selectedRole === 'Rider'
             ? 'border-blue-500 bg-blue-50'
             : 'border-gray-200'
             } shadow-lg`}
-          onPress={() => handleRoleSelect('rider')}
+          onPress={() => handleRoleSelect('Rider')}
           activeOpacity={0.8}
         >
           <View className='items-center relative'>
-            {selectedRole === 'rider' && (
+            {selectedRole === 'Rider' && (
               <View className='absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full items-center justify-center'>
                 <Text className='text-white text-sm font-bold'>✓</Text>
               </View>
@@ -76,15 +75,15 @@ export default function UserSelection() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          className={`bg-white rounded-2xl p-6 border-2 ${selectedRole === 'driver'
+          className={`bg-white rounded-2xl p-6 border-2 ${selectedRole === 'Driver'
             ? 'border-blue-500 bg-blue-50'
             : 'border-gray-200'
             } shadow-lg`}
-          onPress={() => handleRoleSelect('driver')}
+          onPress={() => handleRoleSelect('Driver')}
           activeOpacity={0.8}
         >
           <View className='items-center relative'>
-            {selectedRole === 'driver' && (
+            {selectedRole === 'Driver' && (
               <View className='absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full items-center justify-center'>
                 <Text className='text-white text-sm font-bold'>✓</Text>
               </View>

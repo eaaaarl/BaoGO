@@ -3,12 +3,14 @@ import InputField from "@/components/InputFields";
 import OAuth from "@/components/OAuth";
 import { icons, images } from "@/constant/image";
 import { useSignInMutation } from "@/feature/auth/api/authApi";
-import { Link, router, useLocalSearchParams } from "expo-router";
+import { useAppDispatch, useAppSelector } from "@/libs/redux/hooks";
+import { Link, router } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-native";
 
 const SignIn = () => {
-  const { role } = useLocalSearchParams();
+  const dispatch = useAppDispatch()
+  const { userRole } = useAppSelector((state) => state.userRole)
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -28,8 +30,23 @@ const SignIn = () => {
       Alert.alert('Validation Error', 'Password must be at least 6 characters')
       return false
     }
-    if (!role || (role !== 'driver' && role !== 'rider')) {
-      Alert.alert('Error', 'Please select a valid role (Driver or Rider)')
+    if (!userRole || (userRole !== 'Driver' && userRole !== 'Rider')) {
+      Alert.alert(
+        'Error',
+        'Please select a valid role (Driver or Rider)',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          },
+          {
+            text: 'Select Role',
+            onPress: () => {
+              router.replace('/(auth)/user-selection');
+            }
+          }
+        ]
+      )
       return false
     }
     return true
@@ -44,23 +61,28 @@ const SignIn = () => {
         password: form.password,
       }).unwrap();
 
-      if (role === 'driver') {
-        // router.replace('/(tabs)/home');
-      } else if (role === 'rider') {
-        router.replace('/(tabs)/home');
-      } else {
-        router.replace('/(auth)/user-selection');
-      }
+      /*  if (role === 'driver') {
+         // router.replace('/(tabs)/home');
+       } else if (role === 'rider') {
+         router.replace('/(tabs)/home');
+       } else {
+         router.replace('/(auth)/user-selection');
+       } */
+      router.replace('/(tabs)/home');
     } catch (error) {
-      Alert.alert('Sign In Error', error as string);
+      console.log(error);
+      //Alert.alert('Sign In Error', error as string);
     }
-  }, [form.email, form.password, role, signIn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.email, form.password, /* role, */ signIn]);
 
   const getRoleDisplayText = () => {
-    if (role === 'driver') return 'Driver';
-    if (role === 'rider') return 'Rider';
+    if (userRole === 'Driver') return 'Driver';
+    if (userRole === 'Rider') return 'Rider';
     return '';
   };
+
+  console.log(userRole)
 
   return (
     <ScrollView
@@ -100,7 +122,7 @@ const SignIn = () => {
           />
           <OAuth />
           <Link
-            href={`/sign-up?role=${role}`}
+            href={`/(auth)/sign-up`}
             className="text-lg text-center text-general-200 mt-10"
           >
             Don&apos;t have an account?{" "}

@@ -3,19 +3,21 @@ import InputField from '@/components/InputFields'
 import OAuth from '@/components/OAuth'
 import { icons, images } from '@/constant/image'
 import { useSignUpMutation } from '@/feature/auth/api/authApi'
-import { Link, router, useLocalSearchParams } from 'expo-router'
+import { useAppSelector } from '@/libs/redux/hooks'
+import { Link } from 'expo-router'
 import { useState } from 'react'
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function SignUp() {
-  const { role } = useLocalSearchParams()
+  const { userRole } = useAppSelector((state) => state.userRole)
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
   })
 
+  const bottmInsets = useSafeAreaInsets()
   const validateForm = () => {
     if (!form.name.trim()) {
       Alert.alert('Validation Error', 'Please enter your name')
@@ -33,7 +35,7 @@ export default function SignUp() {
       Alert.alert('Validation Error', 'Password must be at least 6 characters')
       return false
     }
-    if (!role || (role !== 'driver' && role !== 'rider')) {
+    if (!userRole || (userRole !== 'Driver' && userRole !== 'Rider')) {
       Alert.alert('Error', 'Please select a valid role (Driver or Rider)')
       return false
     }
@@ -51,19 +53,21 @@ export default function SignUp() {
       await signUp({
         email: form.email,
         password: form.password,
-        full_name: form.name
+        full_name: form.name,
+        user_role: userRole
       }).unwrap();
 
 
-      if (role === 'driver') {
-        //router.replace('/(driver)/dashboard');
-      } else if (role === 'rider') {
-        router.replace('/(tabs)/home');
-      } else {
-        Alert.alert('Success', 'Account created successfully!');
-        router.replace(`/sign-in?role=${role}`);
-      }
+      /*  if (userRole === 'Driver') {
+         //router.replace('/(driver)/dashboard');
+       } else if (userRole === 'Rider') {
+         router.replace('/(tabs)/home');
+       } else {
+         Alert.alert('Success', 'Account created successfully!');
+         router.replace(`/(auth)/sign-in`);
+       } */
 
+      // router.replace('/(tabs)/home');
 
     } catch (error) {
       console.error('Sign up error:', error);
@@ -72,13 +76,13 @@ export default function SignUp() {
   };
 
   const getRoleDisplayText = () => {
-    if (role === 'driver') return 'Driver';
-    if (role === 'rider') return 'Rider';
+    if (userRole === 'Driver') return 'Driver';
+    if (userRole === 'Rider') return 'Rider';
     return '';
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{ flex: 1, backgroundColor: 'white', marginBottom: bottmInsets.bottom }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -97,13 +101,7 @@ export default function SignUp() {
             </View>
 
             <View className="p-5">
-              {role && (
-                <View className="bg-blue-50 p-3 rounded-lg mb-4">
-                  <Text className="text-sm text-blue-600 text-center">
-                    Signing up as: <Text className="font-semibold">{getRoleDisplayText()}</Text>
-                  </Text>
-                </View>
-              )}
+
 
               <InputField
                 label="Full Name"
@@ -144,11 +142,7 @@ export default function SignUp() {
               <OAuth />
 
               <Link
-                href={{
-                  pathname: '/sign-in',
-                  params: { role: role }
-                }}
-                asChild
+                href={`/(auth)/sign-in`}
                 className="text-lg text-center text-general-200 mt-10"
               >
                 Already have an account?{" "}
@@ -156,10 +150,7 @@ export default function SignUp() {
               </Link>
 
               <Link
-                href={{
-                  pathname: '/user-selection'
-                }}
-                asChild
+                href={`/(auth)/user-selection`}
                 className="text-sm text-center text-gray-500 mt-4"
               >
                 Want to sign up as a different role?{" "}
@@ -169,6 +160,6 @@ export default function SignUp() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   )
 }

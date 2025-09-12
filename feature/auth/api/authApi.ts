@@ -17,6 +17,7 @@ export const authApi = createApi({
               options: {
                 data: {
                   full_name: credentials.full_name.trim(),
+                  user_role: credentials.user_role,
                 },
               },
             });
@@ -35,6 +36,7 @@ export const authApi = createApi({
                   id: authData.user.id,
                   full_name: credentials.full_name.trim(),
                   email: credentials.email.trim().toLowerCase(),
+                  userRole: credentials.user_role,
                   created_at: new Date().toISOString(),
                 },
               ]);
