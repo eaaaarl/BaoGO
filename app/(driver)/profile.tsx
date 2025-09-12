@@ -1,4 +1,5 @@
 import { useGetProfileUserQuery, useSignOutMutation } from '@/feature/auth/api/authApi';
+import { useGetDriverProfileQuery } from '@/feature/driver/api/driverApi';
 import ProfileRow from '@/feature/driver/components/ProfileRow';
 import { useAppSelector } from '@/libs/redux/hooks';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,11 +17,17 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
   const { user } = useAppSelector((state) => state.auth);
   const [signOut] = useSignOutMutation();
+
   const { data: profileUser } = useGetProfileUserQuery(user?.id as string);
+  const { data: driverProfile } = useGetDriverProfileQuery({ id: user?.id as string });
+
   const driver = {
     name: profileUser?.full_name,
     email: user?.email,
-    joinedDate: profileUser?.created_at.split('T')[0]
+    joinedDate: profileUser?.created_at.split('T')[0],
+    vehicle: driverProfile?.vehicle_type,
+    plateNumber: driverProfile?.license_number,
+    phone: user?.user_metadata.phone,
   };
 
   const handleLogout = () => {
@@ -73,15 +80,15 @@ export default function Profile() {
             </View>
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-sm text-gray-500">Phone</Text>
-              <Text className="text-sm text-gray-800">{'N/A'}</Text>
+              <Text className="text-sm text-gray-800">{driver.phone}</Text>
             </View>
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-sm text-gray-500">Vehicle</Text>
-              <Text className="text-sm text-gray-800">{'N/A'}</Text>
+              <Text className="text-sm text-gray-800">{driver.vehicle}</Text>
             </View>
             <View className="flex-row justify-between items-center">
               <Text className="text-sm text-gray-500">Plate Number</Text>
-              <Text className="text-sm text-gray-800">{'N/A'}</Text>
+              <Text className="text-sm text-gray-800">{driver.plateNumber}</Text>
             </View>
           </View>
         </View>
