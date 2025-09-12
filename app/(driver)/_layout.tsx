@@ -12,7 +12,6 @@ const CustomTabButton = (props: any) => (
   />
 );
 
-
 export default function DriverLayout() {
   const insets = useSafeAreaInsets();
   return (
