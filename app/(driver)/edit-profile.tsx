@@ -1,6 +1,6 @@
 import CustomButton from '@/components/CustomButton';
 import InputField from '@/components/InputFields';
-import { authApi, useGetProfileUserQuery } from '@/feature/auth/api/authApi';
+import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
 import { useGetDriverProfileQuery, useUpdateDriverProfileMutation } from '@/feature/driver/api/driverApi';
 import { UpdateDriverProfilePayload } from '@/feature/driver/api/interface';
 import { useAppSelector } from '@/libs/redux/hooks';
@@ -57,9 +57,11 @@ export default function EditProfile() {
         vehicle_plate_number: form.vehiclePlateNumber,
         vehicle_year: form.vehicleYear,
       };
-      await updateDriverProfile(payload);
+      const result = await updateDriverProfile(payload);
 
-      authApi.util.invalidateTags(['Profile']);
+      if (result.error) {
+        console.log('result.error', result.error);
+      }
 
       router.replace('/(driver)/profile');
     } catch (error) {
@@ -115,7 +117,6 @@ export default function EditProfile() {
           <InputField label="Email" value={profile?.email} editable={false} />
         </View>
 
-        {/* Vehicle Info */}
         <View className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <Text className="text-sm text-gray-500 mb-2">Vehicle Information</Text>
 

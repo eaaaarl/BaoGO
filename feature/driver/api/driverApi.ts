@@ -1,3 +1,4 @@
+import { authApi } from "@/feature/auth/api/authApi";
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { DriverProfile, UpdateDriverProfilePayload } from "./interface";
@@ -5,9 +6,15 @@ import { DriverProfile, UpdateDriverProfilePayload } from "./interface";
 export const driverApi = createApi({
   reducerPath: "driverApi",
   baseQuery: fakeBaseQuery(),
+  tagTypes: ["DriverProfile"],
   endpoints: (builder) => ({
     updateDriverProfile: builder.mutation({
-      queryFn: async (payload: UpdateDriverProfilePayload) => {
+      queryFn: async (
+        payload: UpdateDriverProfilePayload,
+        api,
+        extraOptions,
+        baseQuery
+      ) => {
         try {
           const authUpdateResult = await supabase.auth.updateUser({
             data: {
@@ -47,7 +54,6 @@ export const driverApi = createApi({
             .upsert({
               id: payload.id,
               vehicle_type: payload.vehicle_type,
-              vehicle_model: payload.vehicle_model,
               vehicle_color: payload.vehicle_color,
               license_number: payload.vehicle_plate_number,
               vehicle_year: payload.vehicle_year,
@@ -65,6 +71,8 @@ export const driverApi = createApi({
             };
           }
 
+          api.dispatch(authApi.util.invalidateTags(["Profile", "User"]));
+
           return {
             data: driverProfilesUpsertResult.data,
           };
@@ -75,6 +83,7 @@ export const driverApi = createApi({
           };
         }
       },
+      invalidatesTags: ["DriverProfile"],
     }),
 
     getDriverProfile: builder.query<DriverProfile, { id: string }>({
@@ -106,6 +115,7 @@ export const driverApi = createApi({
           return { error: { status: "CUSTOM_ERROR", error: error as string } };
         }
       },
+      providesTags: ["DriverProfile"],
     }),
   }),
 });
