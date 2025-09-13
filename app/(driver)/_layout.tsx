@@ -85,6 +85,14 @@ export default function DriverLayout() {
           tabBarStyle: { display: "none" },
         }}
       />
+      <Tabs.Screen
+        name="vehicle-details"
+        options={{
+          href: null,
+          headerShown: false,
+          tabBarStyle: { display: "none" },
+        }}
+      />
     </Tabs>
   );
 }
