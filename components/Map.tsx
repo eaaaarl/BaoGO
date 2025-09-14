@@ -1,7 +1,6 @@
 import { icons } from '@/constant/image';
-import { generateMarkersFromData } from '@/libs/maps';
+import { useGetNearbyDriversQuery } from '@/feature/user/api/userApi';
 import { useAppSelector } from '@/libs/redux/hooks';
-import { MarkerData } from '@/types/type';
 import React, { useEffect, useState } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from "react-native-maps-directions";
@@ -104,21 +103,30 @@ export default function Map() {
   } = useAppSelector((state) => state.location)
   const { selectedDriver } = useAppSelector((state) => state.driver)
 
-  const [markers, setMarkers] = useState<MarkerData[]>([]);
 
+  const { data: nearbyDrivers } = useGetNearbyDriversQuery({
+    userLatitude: userLatitude!,
+    userLongitude: userLongitude!,
+    radiusInKm: 5
+  }, {
+    skip: !userLatitude || !userLongitude
+  });
+
+  console.log(nearbyDrivers);
+
+  const [markers, setMarkers] = useState<any[]>([]);
   useEffect(() => {
-    if (Array.isArray(drivers)) {
-      if (!userLatitude || !userLongitude) return;
-
-      const newMarkers = generateMarkersFromData({
-        data: drivers,
-        userLatitude,
-        userLongitude,
-      });
+    if (nearbyDrivers) {
+      const newMarkers = nearbyDrivers.map((driver) => ({
+        id: driver.id,
+        latitude: driver.latitude,
+        longitude: driver.longitude,
+        title: driver.profiles?.full_name,
+      }));
 
       setMarkers(newMarkers);
     }
-  }, [userLatitude, userLongitude]);
+  }, [nearbyDrivers]);
 
   const region = calculateRegion({
     userLatitude,

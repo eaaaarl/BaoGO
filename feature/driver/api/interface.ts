@@ -17,3 +17,10 @@ export interface DriverProfile {
   vehicle_model: string;
   vehicle_year: string;
 }
+
+export interface UpdateDriverLocationPayload {
+  id: string;
+  latitude: number;
+  longitude: number;
+  last_location_update: Date;
+}

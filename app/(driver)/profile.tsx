@@ -44,6 +44,7 @@ export default function Profile() {
           style: 'destructive',
           onPress: async () => {
             await signOut({});
+            router.replace('/(auth)');
           }
         }
       ]
@@ -70,25 +71,25 @@ export default function Profile() {
               <Ionicons name="person" size={40} color="#0286FF" />
             </View>
             <Text className="text-xl font-semibold text-gray-800">{driver.name?.toUpperCase() || 'N/A'}</Text>
-            <Text className="text-sm text-gray-500">Driver since {driver.joinedDate}</Text>
+            <Text className="text-sm text-gray-500 font-semibold">Driver since {driver.joinedDate}</Text>
           </View>
 
           <View className="border-t border-gray-100 pt-4">
             <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-sm text-gray-500">Email</Text>
-              <Text className="text-sm text-gray-800">{driver.email || 'N/A'}</Text>
+              <Text className="text-sm text-gray-500 font-semibold">Email</Text>
+              <Text className="text-sm text-gray-800 font-semibold">{driver.email || 'N/A'}</Text>
             </View>
             <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-sm text-gray-500">Phone</Text>
-              <Text className="text-sm text-gray-800">{driver.phone}</Text>
+              <Text className="text-sm text-gray-500 font-semibold">Phone</Text>
+              <Text className="text-sm text-gray-800 font-semibold">{driver.phone}</Text>
             </View>
             <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-sm text-gray-500">Vehicle</Text>
-              <Text className="text-sm text-gray-800">{driver.vehicle}</Text>
+              <Text className="text-sm text-gray-500 font-semibold">Vehicle</Text>
+              <Text className="text-sm text-gray-800 font-semibold">{driver.vehicle}</Text>
             </View>
             <View className="flex-row justify-between items-center">
-              <Text className="text-sm text-gray-500">Plate Number</Text>
-              <Text className="text-sm text-gray-800">{driver.plateNumber}</Text>
+              <Text className="text-sm text-gray-500 font-semibold">Plate Number</Text>
+              <Text className="text-sm text-gray-800 font-semibold">{driver.plateNumber}</Text>
             </View>
           </View>
         </View>
@@ -109,14 +110,14 @@ export default function Profile() {
           <ProfileRow
             icon="car-outline"
             title="Vehicle Details"
-            onPress={() => Alert.alert('Vehicle Details', 'Feature coming soon!')}
+            onPress={() => router.push('/(driver)/vehicle-details')}
             showArrow
             value=""
             danger={false}
           />
           <View className="h-px bg-gray-100 ml-14" />
 
-          <ProfileRow
+          {/* <ProfileRow
             icon="document-text-outline"
             title="Documents"
             onPress={() => Alert.alert('Documents', 'Feature coming soon!')}
@@ -133,7 +134,8 @@ export default function Profile() {
             showArrow
             value=""
             danger={false}
-          />
+          /> */}
+
         </View>
       </View>
 
@@ -142,7 +144,7 @@ export default function Profile() {
           <ProfileRow
             icon="help-circle-outline"
             title="Help & Support"
-            onPress={() => Alert.alert('Help & Support', 'Contact: support@app.com')}
+            onPress={() => Alert.alert('Help & Support', 'Contact: support@baogo.com')}
             showArrow
             value=""
             danger={false}
@@ -152,7 +154,7 @@ export default function Profile() {
           <ProfileRow
             icon="information-circle-outline"
             title="About"
-            onPress={() => Alert.alert('About', 'BaoBao Driver App v1.0\nSoftware Engineering Project')}
+            onPress={() => Alert.alert('About', 'BaoGO App v1.0\n\nCreated by Earl Dominic V. Ado')}
             showArrow
             value=""
             danger={false}

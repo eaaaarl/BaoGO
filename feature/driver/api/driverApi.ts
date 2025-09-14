@@ -1,58 +1,94 @@
+import { authApi } from "@/feature/auth/api/authApi";
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { DriverProfile, UpdateDriverProfilePayload } from "./interface";
+import {
+  DriverProfile,
+  UpdateDriverLocationPayload,
+  UpdateDriverProfilePayload,
+} from "./interface";
 
 export const driverApi = createApi({
   reducerPath: "driverApi",
   baseQuery: fakeBaseQuery(),
+  tagTypes: ["DriverProfile", "DriverLocation"],
   endpoints: (builder) => ({
     updateDriverProfile: builder.mutation({
-      queryFn: async (payload: UpdateDriverProfilePayload) => {
+      queryFn: async (
+        payload: UpdateDriverProfilePayload,
+        api,
+        extraOptions,
+        baseQuery
+      ) => {
         try {
-          // update user metadata
-          await supabase.auth.updateUser({
+          const authUpdateResult = await supabase.auth.updateUser({
             data: {
               full_name: payload.full_name,
               phone: payload.phone,
             },
           });
 
-          // update user profile
-          await supabase
+          if (authUpdateResult.error) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: authUpdateResult.error.message,
+              },
+            };
+          }
+
+          // Update profiles table
+          const profilesUpdateResult = await supabase
             .from("profiles")
             .update({
               full_name: payload.full_name,
             })
             .eq("id", payload.id);
 
-          // upsert driver profile
-          const { data, error } = await supabase
+          if (profilesUpdateResult.error) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: profilesUpdateResult.error.message,
+              },
+            };
+          }
+
+          const driverProfilesUpsertResult = await supabase
             .from("driver_profiles")
             .upsert({
-              id: payload.id, // primary key (must exist in schema)
+              id: payload.id,
               vehicle_type: payload.vehicle_type,
-              vehicle_model: payload.vehicle_model,
               vehicle_color: payload.vehicle_color,
               license_number: payload.vehicle_plate_number,
               vehicle_year: payload.vehicle_year,
             })
-            .eq("id", payload.id) // ensures we target the same row
+            .eq("id", payload.id)
             .select()
             .single();
 
-          if (error) {
-            return { error: { status: "CUSTOM_ERROR", error: error.message } };
+          if (driverProfilesUpsertResult.error) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: driverProfilesUpsertResult.error.message,
+              },
+            };
           }
 
+          api.dispatch(authApi.util.invalidateTags(["Profile", "User"]));
+
           return {
-            data,
+            data: driverProfilesUpsertResult.data,
           };
         } catch (error) {
-          return { error: { status: "CUSTOM_ERROR", error: error as string } };
+          console.error("Unexpected error in updateDriverProfile:", error);
+          return {
+            error: { status: "CUSTOM_ERROR", error: (error as Error).message },
+          };
         }
       },
+      invalidatesTags: ["DriverProfile"],
     }),
-
     getDriverProfile: builder.query<DriverProfile, { id: string }>({
       queryFn: async ({ id }) => {
         try {
@@ -82,9 +118,40 @@ export const driverApi = createApi({
           return { error: { status: "CUSTOM_ERROR", error: error as string } };
         }
       },
+      providesTags: ["DriverProfile", "DriverLocation"],
+    }),
+
+    updateDriverLocation: builder.mutation({
+      queryFn: async (payload: UpdateDriverLocationPayload) => {
+        try {
+          const { data, error } = await supabase
+            .from("driver_locations")
+            .update(payload)
+            .eq("id", payload.id);
+
+          if (error) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: error.message,
+              },
+            };
+          }
+
+          return {
+            data,
+          };
+        } catch (error) {
+          return { error: { status: "CUSTOM_ERROR", error: error as string } };
+        }
+      },
+      invalidatesTags: ["DriverLocation"],
     }),
   }),
 });
 
-export const { useUpdateDriverProfileMutation, useGetDriverProfileQuery } =
-  driverApi;
+export const {
+  useUpdateDriverProfileMutation,
+  useGetDriverProfileQuery,
+  useUpdateDriverLocationMutation,
+} = driverApi;
