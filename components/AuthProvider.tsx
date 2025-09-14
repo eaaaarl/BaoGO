@@ -21,10 +21,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           } else if (role === 'Rider') {
             router.replace('/(tabs)/home')
           } else {
-            router.replace('/(auth)/sign-in')
+            router.replace('/(auth)')
           }
         } else {
           dispatch(clearAuth())
+          router.replace('/(auth)')
         }
       } catch (error) {
         console.error('Error checking initial session:', error)
@@ -35,6 +36,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+
+        console.log('EVENT', event)
+        console.log('SESSION', session)
 
         if (session?.user) {
           const role = session.user.user_metadata?.user_role
@@ -49,7 +53,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           }
         } else {
           dispatch(clearAuth())
-          router.replace('/(auth)/sign-in')
+          router.replace('/(auth)')
         }
       }
     )

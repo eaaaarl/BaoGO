@@ -195,7 +195,7 @@ export default function Index() {
     await supabase.auth.signOut();
     dispatch(clearSelectedDriver());
     dispatch(clearLocation());
-    router.replace('/(auth)/sign-in');
+    router.replace('/(auth)');
   };
 
   const handleDestinationPress = (location: {

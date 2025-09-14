@@ -1,12 +1,16 @@
 import { authApi } from "@/feature/auth/api/authApi";
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { DriverProfile, UpdateDriverProfilePayload } from "./interface";
+import {
+  DriverProfile,
+  UpdateDriverLocationPayload,
+  UpdateDriverProfilePayload,
+} from "./interface";
 
 export const driverApi = createApi({
   reducerPath: "driverApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["DriverProfile"],
+  tagTypes: ["DriverProfile", "DriverLocation"],
   endpoints: (builder) => ({
     updateDriverProfile: builder.mutation({
       queryFn: async (
@@ -85,7 +89,6 @@ export const driverApi = createApi({
       },
       invalidatesTags: ["DriverProfile"],
     }),
-
     getDriverProfile: builder.query<DriverProfile, { id: string }>({
       queryFn: async ({ id }) => {
         try {
@@ -115,10 +118,40 @@ export const driverApi = createApi({
           return { error: { status: "CUSTOM_ERROR", error: error as string } };
         }
       },
-      providesTags: ["DriverProfile"],
+      providesTags: ["DriverProfile", "DriverLocation"],
+    }),
+
+    updateDriverLocation: builder.mutation({
+      queryFn: async (payload: UpdateDriverLocationPayload) => {
+        try {
+          const { data, error } = await supabase
+            .from("driver_locations")
+            .update(payload)
+            .eq("id", payload.id);
+
+          if (error) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: error.message,
+              },
+            };
+          }
+
+          return {
+            data,
+          };
+        } catch (error) {
+          return { error: { status: "CUSTOM_ERROR", error: error as string } };
+        }
+      },
+      invalidatesTags: ["DriverLocation"],
     }),
   }),
 });
 
-export const { useUpdateDriverProfileMutation, useGetDriverProfileQuery } =
-  driverApi;
+export const {
+  useUpdateDriverProfileMutation,
+  useGetDriverProfileQuery,
+  useUpdateDriverLocationMutation,
+} = driverApi;
