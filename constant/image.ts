@@ -19,6 +19,8 @@ import star from "@/assets/icons/star.png";
 import target from "@/assets/icons/target.png";
 import to from "@/assets/icons/to.png";
 import baobaoAuth from "@/assets/images/bao-auth.png";
+import baobao2 from "@/assets/images/bao-bao-2.png";
+import baobao from "@/assets/images/bao-bao.png";
 import baobaoDriver from "@/assets/images/bg-baobao.png";
 import message from "@/assets/images/message.png";
 import noResult from "@/assets/images/no-result.png";
@@ -30,6 +32,8 @@ export const images = {
   noResult,
   message,
   baobaoDriver,
+  baobao,
+  baobao2,
 };
 
 export const icons = {

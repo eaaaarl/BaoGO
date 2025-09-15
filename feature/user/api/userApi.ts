@@ -1,10 +1,11 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
+import { AvailableDriver } from "./interface";
 
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["getDriverNearby"],
+  tagTypes: ["getDriverNearby", "AvailableDrivers"],
   endpoints: (builder) => ({
     getNearbyDrivers: builder.query({
       queryFn: async ({
@@ -72,7 +73,49 @@ export const userApi = createApi({
       },
       providesTags: ["getDriverNearby"],
     }),
+
+    getAvailableDrivers: builder.query<AvailableDriver[], void>({
+      queryFn: async () => {
+        try {
+          const { data, error } = await supabase
+            .from("driver_profiles")
+            .select(
+              `
+              id,
+              latitude,
+              longitude,
+              last_location_update,
+              vehicle_type,
+              vehicle_color,
+              vehicle_year,
+              license_number,
+              is_available,
+              profiles:id (
+                full_name,
+                avatar_url
+              )
+            `
+            )
+            .eq("is_available", true)
+            .not("latitude", "is", null)
+            .not("longitude", "is", null)
+            .order("last_location_update", { ascending: false });
+
+          if (error) {
+            return { error: { status: "CUSTOM_ERROR", error: error.message } };
+          }
+
+          return { data: data as unknown as AvailableDriver[] };
+        } catch (error) {
+          return {
+            error: { status: "CUSTOM_ERROR", error: (error as Error).message },
+          };
+        }
+      },
+      providesTags: ["AvailableDrivers"],
+    }),
   }),
 });
 
-export const { useGetNearbyDriversQuery } = userApi;
+export const { useGetNearbyDriversQuery, useGetAvailableDriversQuery } =
+  userApi;

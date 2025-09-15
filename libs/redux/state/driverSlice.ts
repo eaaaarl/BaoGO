@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface DriverState {
   drivers: MarkerData[];
-  selectedDriver: number | null;
+  selectedDriver: string | null;
 }
 
 const initialState: DriverState = {
@@ -15,7 +15,7 @@ export const driverSlice = createSlice({
   name: "driver",
   initialState,
   reducers: {
-    setSelectedDriver: (state, action: PayloadAction<{ driverId: number }>) => {
+    setSelectedDriver: (state, action: PayloadAction<{ driverId: string }>) => {
       state.selectedDriver = action.payload.driverId;
     },
     setDrivers: (state, action: PayloadAction<{ drivers: MarkerData[] }>) => {
