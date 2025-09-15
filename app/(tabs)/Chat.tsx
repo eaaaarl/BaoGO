@@ -1,9 +1,12 @@
 import { images } from '@/constant/image'
+import { useLocalSearchParams } from 'expo-router'
 import React from 'react'
 import { Image, SafeAreaView, ScrollView, Text, View } from 'react-native'
 
 
 export default function Chat() {
+  const { chatRoomId } = useLocalSearchParams()
+  console.log(chatRoomId)
   return (
     <SafeAreaView className="flex-1 bg-white p-5">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>

@@ -12,7 +12,6 @@ const ConfirmRide = () => {
   const dispatch = useAppDispatch()
   const { selectedDriver } = useAppSelector((state) => state.driver)
   const { data } = useGetAvailableDriversQuery()
-
   return (
     <RideLayout title={"Choose a Rider"} snapPoints={["80%"]}>
       <FlatList
