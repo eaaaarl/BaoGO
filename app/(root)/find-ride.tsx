@@ -13,7 +13,7 @@ export default function FindRide() {
   const dispatch = useAppDispatch()
   const { userAddress, destinationAddress } = useAppSelector((state) => state.location)
   return (
-    <RideLayout title='Ride'>
+    <RideLayout title='Ride' >
       <View className='my-3'>
         <Text className='text-lg'>From</Text>
 
@@ -41,7 +41,7 @@ export default function FindRide() {
       <CustomButton
         title="Find Now"
         onPress={() => router.push(`/(root)/confirm-ride`)}
-        className="my-5"
+        className="mb-8"
       />
     </RideLayout>
   )
