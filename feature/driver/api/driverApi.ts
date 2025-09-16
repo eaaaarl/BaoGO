@@ -3,6 +3,7 @@ import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
   DriverProfile,
+  Ride,
   UpdateDriverLocationPayload,
   UpdateDriverProfilePayload,
 } from "./interface";
@@ -174,6 +175,34 @@ export const driverApi = createApi({
       },
       providesTags: ["DriverChatRooms"],
     }),
+
+    getRiderRequestRide: builder.query<Ride[], { driverId: string }>({
+      queryFn: async ({ driverId }) => {
+        try {
+          const { data, error } = await supabase
+            .from(`request_ride`)
+            .select(
+              `*,
+              driver:driver_profiles!request_ride_driver_id_fkey
+              (*, profile:profiles(*))`
+            )
+            .eq("driver_id", driverId);
+
+          if (error) {
+            return {
+              error: { error },
+            };
+          }
+
+          return { data };
+        } catch (error) {
+          console.log("Error fetching request ride", error);
+          return {
+            error,
+          };
+        }
+      },
+    }),
   }),
 });
 
@@ -182,4 +211,5 @@ export const {
   useGetDriverProfileQuery,
   useUpdateDriverLocationMutation,
   useGetDriverChatRoomsQuery,
+  useGetRiderRequestRideQuery,
 } = driverApi;
