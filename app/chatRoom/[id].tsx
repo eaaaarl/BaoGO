@@ -2,11 +2,9 @@ import { useGetChatMessagesQuery, useSendMessageMutation } from '@/feature/messa
 import { useAppSelector } from '@/libs/redux/hooks'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
   FlatList,
-  Keyboard,
-  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   Text,
@@ -14,8 +12,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 interface Message {
   id: string
   chat_room_id: string
@@ -35,7 +33,6 @@ export default function ChatRoom() {
 
   const router = useRouter()
   const [message, setMessage] = useState('')
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false)
   const inset = useSafeAreaInsets()
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
 
@@ -43,7 +40,6 @@ export default function ChatRoom() {
   const [sendMessage, { isLoading }] = useSendMessageMutation()
 
   console.log("messages", JSON.stringify(messages, null, 2))
-  console.log("isKeyboardVisible", isKeyboardVisible)
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
     return date.toLocaleTimeString('en-US', {
@@ -69,26 +65,6 @@ export default function ChatRoom() {
       console.log("error", error)
     }
   }
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setKeyboardVisible(true)
-      }
-    )
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setKeyboardVisible(false)
-      }
-    )
-
-    return () => {
-      keyboardDidShowListener?.remove()
-      keyboardDidHideListener?.remove()
-    }
-  }, [])
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isCurrentUser = item.sender_id === currentUserId
@@ -179,7 +155,7 @@ export default function ChatRoom() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'android' ? 'padding' : undefined}
         className="border-t border-gray-200 bg-white"
-        style={{ marginBottom: isKeyboardVisible ? 0 : 0 }}
+        style={{ marginBottom: inset.bottom }}
       >
         <View className="flex-row items-center p-4">
           <View className="flex-1 flex-row items-center bg-gray-100 rounded-full px-4 py-2 mr-3">
