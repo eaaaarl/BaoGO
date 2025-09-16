@@ -1,11 +1,16 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { AvailableDriver } from "./interface";
+import {
+  AvailableDriver,
+  RequestRidePayload,
+  Ride,
+  updateRequestRidePayload,
+} from "./interface";
 
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["getDriverNearby", "AvailableDrivers"],
+  tagTypes: ["getDriverNearby", "AvailableDrivers", "getRequestRide"],
   endpoints: (builder) => ({
     getNearbyDrivers: builder.query({
       queryFn: async ({
@@ -60,7 +65,6 @@ export const userApi = createApi({
       },
       providesTags: ["getDriverNearby"],
     }),
-
     getAvailableDrivers: builder.query<AvailableDriver[], void>({
       queryFn: async () => {
         try {
@@ -104,8 +108,98 @@ export const userApi = createApi({
       },
       providesTags: ["AvailableDrivers"],
     }),
+
+    requestRide: builder.mutation<any, RequestRidePayload>({
+      queryFn: async ({
+        destinationLocation,
+        pickupLocation,
+        riderId,
+        status,
+        driverId,
+      }) => {
+        try {
+          const { data, error } = await supabase
+            .from(`request_ride`)
+            .insert([
+              {
+                rider_id: riderId,
+                driver_id: driverId,
+                pickup: pickupLocation,
+                destination: destinationLocation,
+                status: status,
+              },
+            ])
+            .select()
+            .single();
+          if (error) throw error;
+
+          console.log("error", error);
+          console.log("user:api:post", data);
+          return { data };
+        } catch (error) {
+          return {
+            error: { status: "CUSTOM_ERROR", error: (error as Error).message },
+          };
+        }
+      },
+    }),
+
+    getRequestRide: builder.query<Ride[], void>({
+      queryFn: async () => {
+        try {
+          const { data, error } = await supabase.from(`request_ride`)
+            .select(`*,driver:driver_profiles!request_ride_driver_id_fkey
+              (*, profile:profiles(*))`);
+
+          if (error) {
+            return {
+              error: { error },
+            };
+          }
+
+          return { data };
+        } catch (error) {
+          console.log("Error fetching request ride", error);
+          return {
+            error,
+          };
+        }
+      },
+      providesTags: ["getRequestRide"],
+    }),
+
+    updateRequestRide: builder.mutation<any, updateRequestRidePayload>({
+      queryFn: async ({ status, request_id }) => {
+        console.log(request_id);
+        const { data, error } = await supabase
+          .from(`request_ride`)
+          .update({
+            status: status,
+          })
+          .eq("id", request_id)
+          .select()
+          .maybeSingle();
+
+        console.log("data", data);
+        console.log("error", error);
+
+        if (error) {
+          return {
+            error: { error },
+          };
+        }
+
+        return { data };
+      },
+      invalidatesTags: ["getRequestRide"],
+    }),
   }),
 });
 
-export const { useGetNearbyDriversQuery, useGetAvailableDriversQuery } =
-  userApi;
+export const {
+  useGetNearbyDriversQuery,
+  useGetAvailableDriversQuery,
+  useRequestRideMutation,
+  useGetRequestRideQuery,
+  useUpdateRequestRideMutation,
+} = userApi;

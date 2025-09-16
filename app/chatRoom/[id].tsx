@@ -2,11 +2,9 @@ import { useGetChatMessagesQuery, useSendMessageMutation } from '@/feature/messa
 import { useAppSelector } from '@/libs/redux/hooks'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
   FlatList,
-  Keyboard,
-  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   Text,
@@ -14,8 +12,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 interface Message {
   id: string
   chat_room_id: string
@@ -35,15 +33,14 @@ export default function ChatRoom() {
 
   const router = useRouter()
   const [message, setMessage] = useState('')
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false)
   const inset = useSafeAreaInsets()
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
+  const { driverInfo } = useAppSelector((state) => state.ride)
 
   const { data: messages } = useGetChatMessagesQuery({ chatRoomId: id as string })
   const [sendMessage, { isLoading }] = useSendMessageMutation()
 
   console.log("messages", JSON.stringify(messages, null, 2))
-  console.log("isKeyboardVisible", isKeyboardVisible)
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
     return date.toLocaleTimeString('en-US', {
@@ -54,41 +51,21 @@ export default function ChatRoom() {
   }
 
   const handleSendMessage = async () => {
-    if (message.trim().length === 0) return
+    if (message.trim().length === 0 || isLoading) return
     try {
-      const res = await sendMessage({
+      await sendMessage({
         chatRoomId: id as string,
         message: message.trim(),
         senderId: currentUserId!,
         senderType: 'rider' as 'rider' | 'driver' | 'system'
       })
 
-      console.log("send message", JSON.stringify(res, null, 2))
+      setMessage('')
 
     } catch (error) {
       console.log("error", error)
     }
   }
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setKeyboardVisible(true)
-      }
-    )
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setKeyboardVisible(false)
-      }
-    )
-
-    return () => {
-      keyboardDidShowListener?.remove()
-      keyboardDidHideListener?.remove()
-    }
-  }, [])
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isCurrentUser = item.sender_id === currentUserId
@@ -139,7 +116,7 @@ export default function ChatRoom() {
           )}
         </View>
 
-        <Text className={`text-xs text-gray-500 mt-1 ${isCurrentUser ? 'mr-10' : 'ml-10'
+        <Text className={`text-xs text-gray-500 font-normal mt-1 ${isCurrentUser ? 'mr-10' : 'ml-10'
           }`}>
           {formatTime(item.sent_at)}
         </Text>
@@ -158,12 +135,12 @@ export default function ChatRoom() {
         </TouchableOpacity>
 
         <View className="w-10 h-10 rounded-full bg-blue-500 items-center justify-center mr-3">
-          <Text className="text-white font-bold">{currentUserId}</Text>
+          <Text className="text-white font-bold">{driverInfo.full_name.charAt(0)}</Text>
         </View>
 
         <View className="flex-1">
-          <Text className="font-bold text-lg">Jhonn Rex</Text>
-          <Text className="text-sm text-gray-500">Blue Bao-Bao • Online</Text>
+          <Text className="font-bold text-lg">{driverInfo.full_name}</Text>
+          <Text className="text-sm text-gray-500">{driverInfo.vehicle.type} • {driverInfo.vehicle.color}</Text>
         </View>
       </View>
 
@@ -179,7 +156,7 @@ export default function ChatRoom() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'android' ? 'padding' : undefined}
         className="border-t border-gray-200 bg-white"
-        style={{ marginBottom: isKeyboardVisible ? 0 : 0 }}
+        style={{ marginBottom: inset.bottom }}
       >
         <View className="flex-row items-center p-4">
           <View className="flex-1 flex-row items-center bg-gray-100 rounded-full px-4 py-2 mr-3">

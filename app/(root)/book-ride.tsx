@@ -1,11 +1,8 @@
 import CustomButton from '@/components/CustomButton'
 import RideLayout from '@/components/RideLayout'
 import { icons } from '@/constant/image'
-import { useCreateChatRoomMutation } from '@/feature/message/api/messageApi'
-import { useGetAvailableDriversQuery } from '@/feature/user/api/userApi'
+import { useGetAvailableDriversQuery, useRequestRideMutation } from '@/feature/user/api/userApi'
 import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks'
-import { setDriverInfo } from '@/libs/redux/state/rideSlice'
-import { router } from 'expo-router'
 import React from 'react'
 import { Image, Text, View } from 'react-native'
 
@@ -18,6 +15,8 @@ export default function BookRide() {
   const rawDriverDetails = data?.filter(
     (driver) => driver.id === selectedDriver,
   )[0];
+
+
 
   const driverDetails = rawDriverDetails ? {
     id: rawDriverDetails.id,
@@ -33,36 +32,40 @@ export default function BookRide() {
     longitude: rawDriverDetails.longitude,
   } : null;
 
-  const [createChatRoom] = useCreateChatRoomMutation()
+  const [request, { isLoading: requestLoading }] = useRequestRideMutation()
 
   const handleConfirmRide = async () => {
     if (!driverDetails) return;
 
     try {
 
-      dispatch(setDriverInfo({
-        id: driverDetails.id,
-        full_name: driverDetails.title,
-        avatar_url: driverDetails.profile_image_url,
-        vehicle: {
-          type: driverDetails.vehicle_type,
-          color: driverDetails.vehicle_color,
-          license_number: driverDetails.license_number,
-          year: driverDetails.vehicle_year,
-        },
-      }));
+      /*  dispatch(setDriverInfo({
+         id: driverDetails.id,
+         full_name: driverDetails.title,
+         avatar_url: driverDetails.profile_image_url,
+         vehicle: {
+           type: driverDetails.vehicle_type,
+           color: driverDetails.vehicle_color,
+           license_number: driverDetails.license_number,
+           year: driverDetails.vehicle_year,
+         },
+       })); */
 
-      const response = await createChatRoom({
-        driverId: driverDetails.id,
+
+      await request({
         riderId: user?.id!,
-      });
+        driverId: rawDriverDetails?.id!,
+        pickupLocation: userAddress!,
+        destinationLocation: destinationAddress!,
+        status: 'Pending'
+      })
 
-      router.push({
-        pathname: '/(tabs)/Chat',
-        params: {
-          chatRoomId: response.data?.chatRoom.id,
-        },
-      });
+      //router.push({
+      //  pathname: '/(tabs)/Chat',
+      //  params: {
+      //    chatRoomId: 1,
+      //  },
+      //});
 
     } catch (error) {
       console.error('Error confirming ride:', error);
@@ -149,6 +152,7 @@ export default function BookRide() {
           title='Confirm Ride'
           className='my-10'
           onPress={handleConfirmRide}
+          disabled={requestLoading}
         />
       </>
     </RideLayout>

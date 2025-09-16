@@ -163,7 +163,7 @@ export default function Chat() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center">
-          <Text className="text-base text-gray-500">Loading chats...</Text>
+          <Text className="text-base text-gray-500 font-semibold">Loading chats...</Text>
         </View>
       </SafeAreaView>
     )
@@ -172,7 +172,7 @@ export default function Chat() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="px-5 py-3 border-b border-gray-100" style={{ paddingTop: inset.top }}>
-        <Text className="text-2xl font-JakartaBold">Messages</Text>
+        <Text className="text-2xl font-semibold">Messages</Text>
       </View>
 
       {chatRooms && chatRooms.length > 0 ? (

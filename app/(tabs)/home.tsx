@@ -162,6 +162,7 @@ export default function Index() {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       });
+
       dispatch(setUserLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
