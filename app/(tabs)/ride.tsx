@@ -3,45 +3,35 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import PendingRideCard from "@/components/PendingRideCard";
 import { images } from "@/constant/image";
-import { useGetRequestRideQuery } from "@/feature/user/api/userApi";
+import { useGetRequestRideQuery, useUpdateRequestRideMutation } from "@/feature/user/api/userApi";
 import { useAppSelector } from "@/libs/redux/hooks";
 
-const pendingRequests = [
-  {
-    "ride_id": "pending_1",
-    "origin_address": "Your Location",
-    "destination_address": "SM Mall, Butuan City",
-    "origin_latitude": "8.9477",
-    "origin_longitude": "125.5436",
-    "destination_latitude": "8.9500",
-    "destination_longitude": "125.5400",
-    "ride_time": 15,
-    "fare_price": "120.00",
-    "payment_status": "pending",
-    "status": "waiting_for_driver",
-    "user_id": "1",
-    "created_at": new Date().toISOString(),
-    "driver": {
-      "driver_id": "1",
-      "full_name": "Jhonn Rex Ado ",
-      "profile_image_url": "",
-      "car_image_url": "https://ucarecdn.com/a2dc52b2-8bf7-4e49-9a36-3ffb5229ed02/-/preview/465x466/",
-      "car_seats": 4,
-      "rating": "4.8"
-    }
-  }
-]
 
 const WaitingArea = () => {
   const { user } = useAppSelector((state) => state.auth);
   const loading = false;
 
   const { data } = useGetRequestRideQuery()
+  const [updateRequestRide, { isLoading }] = useUpdateRequestRideMutation()
+
+  const handleUpdateRequestRide = async (request_id: string) => {
+    if (!request_id) return
+    try {
+      const res = await updateRequestRide({
+        request_id: request_id,
+        status: 'Cancel'
+      })
+
+      console.log(res)
+    } catch (error) {
+      console.log("Failed to update request ride", error)
+    }
+  }
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <FlatList
         data={data}
-        renderItem={({ item }) => <PendingRideCard ride={item} />}
+        renderItem={({ item }) => <PendingRideCard onSubmit={handleUpdateRequestRide} isLoading={isLoading} ride={item} />}
         keyExtractor={(item, index) => index.toString()}
         className="px-4"
         keyboardShouldPersistTaps="handled"

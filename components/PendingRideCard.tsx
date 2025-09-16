@@ -2,18 +2,28 @@ import { images } from "@/constant/image";
 import { Ride } from "@/feature/user/api/interface";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
-const PendingRideCard = ({ ride }: { ride: Ride }) => {
+interface PendingRideCardProps {
+  ride: Ride;
+  onSubmit: (request_id: string) => void;
+  isLoading: boolean;
+  isCancelled?: boolean; // Add this prop
+}
+
+const PendingRideCard = ({ ride, isLoading, onSubmit }: PendingRideCardProps) => {
+
+  const cancel = ride.status === 'Cancel';
+
   return (
     <View className="bg-white rounded-lg p-4 mb-4 shadow-sm border border-gray-100">
       <View className="flex-row justify-between items-center mb-3">
         <View className="bg-orange-100 px-3 py-1 rounded-full">
           <Text className="text-orange-600 text-xs font-semibold">
-            Waiting for Driver Response
+            {cancel ? ('This ride is cancelled') : 'Waiting for Driver Response'}
           </Text>
         </View>
         <View className="flex-row items-center">
-          <View className="w-2 h-2 bg-orange-500 rounded-full mr-2" />
-          <Text className="text-gray-500 text-xs">{ride.status}...</Text>
+          <View className={`w-2 h-2 rounded-full mr-2 ${cancel ? 'bg-red-600' : 'bg-orange-600'}`} />
+          <Text className="text-gray-500 font-semibold text-xs">{ride.status.toUpperCase()}</Text>
         </View>
       </View>
 
@@ -24,7 +34,6 @@ const PendingRideCard = ({ ride }: { ride: Ride }) => {
               {ride.driver.profile.full_name.charAt(0).toUpperCase()}
             </Text>
           </View>
-
           <View className="flex-1">
             <Text className="font-JakartaSemiBold text-gray-800">
               {ride.driver.profile.full_name}
@@ -47,9 +56,7 @@ const PendingRideCard = ({ ride }: { ride: Ride }) => {
             </Text>
           </View>
         </View>
-
         <View className="ml-1.5 w-px h-6 border-l border-dashed border-gray-300" />
-
         <View className="flex-row items-center">
           <View className="w-3 h-3 bg-red-500 rounded-full mr-3" />
           <View className="flex-1">
@@ -61,16 +68,22 @@ const PendingRideCard = ({ ride }: { ride: Ride }) => {
         </View>
       </View>
 
-      <TouchableOpacity
-        className="bg-red-50 border border-red-200 rounded-lg p-3"
-        onPress={() => {
-          console.log('Cancel ride:', ride.ride_id);
-        }}
-      >
-        <Text className="text-red-600 text-center font-JakartaSemiBold">
-          Cancel Ride Request
-        </Text>
-      </TouchableOpacity>
+      {cancel ? null : (
+        <TouchableOpacity
+          className={`rounded-lg p-3 ${isLoading
+            ? 'bg-gray-100 border border-gray-200'
+            : 'bg-red-50 border border-red-200'
+            }`}
+          onPress={() => onSubmit(ride.id)}
+          disabled={isLoading}
+        >
+          <Text className={`text-center font-semibold ${isLoading ? 'text-gray-400' : 'text-red-600'
+            }`}>
+            {isLoading ? 'Cancelling...' : 'Cancel Ride Request'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
     </View>
   );
 };

@@ -1,11 +1,16 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { AvailableDriver, RequestRidePayload, Ride } from "./interface";
+import {
+  AvailableDriver,
+  RequestRidePayload,
+  Ride,
+  updateRequestRidePayload,
+} from "./interface";
 
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["getDriverNearby", "AvailableDrivers"],
+  tagTypes: ["getDriverNearby", "AvailableDrivers", "getRequestRide"],
   endpoints: (builder) => ({
     getNearbyDrivers: builder.query({
       queryFn: async ({
@@ -160,6 +165,33 @@ export const userApi = createApi({
           };
         }
       },
+      providesTags: ["getRequestRide"],
+    }),
+
+    updateRequestRide: builder.mutation<any, updateRequestRidePayload>({
+      queryFn: async ({ status, request_id }) => {
+        console.log(request_id);
+        const { data, error } = await supabase
+          .from(`request_ride`)
+          .update({
+            status: status,
+          })
+          .eq("id", request_id)
+          .select()
+          .maybeSingle();
+
+        console.log("data", data);
+        console.log("error", error);
+
+        if (error) {
+          return {
+            error: { error },
+          };
+        }
+
+        return { data };
+      },
+      invalidatesTags: ["getRequestRide"],
     }),
   }),
 });
@@ -169,4 +201,5 @@ export const {
   useGetAvailableDriversQuery,
   useRequestRideMutation,
   useGetRequestRideQuery,
+  useUpdateRequestRideMutation,
 } = userApi;
