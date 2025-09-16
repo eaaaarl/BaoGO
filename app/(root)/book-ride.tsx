@@ -1,17 +1,20 @@
 import CustomButton from '@/components/CustomButton'
 import RideLayout from '@/components/RideLayout'
 import { icons } from '@/constant/image'
+import { useCreateChatRoomMutation } from '@/feature/message/api/messageApi'
 import { useGetAvailableDriversQuery } from '@/feature/user/api/userApi'
-import { useAppSelector } from '@/libs/redux/hooks'
+import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks'
+import { setDriverInfo } from '@/libs/redux/state/rideSlice'
 import { router } from 'expo-router'
 import React from 'react'
 import { Image, Text, View } from 'react-native'
 
 export default function BookRide() {
+  const dispatch = useAppDispatch()
   const { userAddress, destinationAddress } = useAppSelector((state) => state.location)
   const { selectedDriver } = useAppSelector((state) => state.driver)
   const { data } = useGetAvailableDriversQuery()
-
+  const { user } = useAppSelector((state) => state.auth)
   const rawDriverDetails = data?.filter(
     (driver) => driver.id === selectedDriver,
   )[0];
@@ -20,14 +23,51 @@ export default function BookRide() {
     id: rawDriverDetails.id,
     profile_image_url: rawDriverDetails.profiles?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face',
     title: rawDriverDetails.profiles?.full_name || 'Driver',
-    time: 5,
     car_seats: 4,
     vehicle_type: rawDriverDetails.vehicle_type,
     vehicle_color: rawDriverDetails.vehicle_color,
     vehicle_year: rawDriverDetails.vehicle_year,
     license_number: rawDriverDetails.license_number,
-    is_available: rawDriverDetails.is_available
+    is_available: rawDriverDetails.is_available,
+    latitude: rawDriverDetails.latitude,
+    longitude: rawDriverDetails.longitude,
   } : null;
+
+  const [createChatRoom] = useCreateChatRoomMutation()
+
+  const handleConfirmRide = async () => {
+    if (!driverDetails) return;
+
+    try {
+
+      dispatch(setDriverInfo({
+        id: driverDetails.id,
+        full_name: driverDetails.title,
+        avatar_url: driverDetails.profile_image_url,
+        vehicle: {
+          type: driverDetails.vehicle_type,
+          color: driverDetails.vehicle_color,
+          license_number: driverDetails.license_number,
+          year: driverDetails.vehicle_year,
+        },
+      }));
+
+      const response = await createChatRoom({
+        driverId: driverDetails.id,
+        riderId: user?.id!,
+      });
+
+      router.push({
+        pathname: '/(tabs)/Chat',
+        params: {
+          chatRoomId: response.data?.chatRoom.id,
+        },
+      });
+
+    } catch (error) {
+      console.error('Error confirming ride:', error);
+    }
+  };
 
   if (!driverDetails) {
     return (
@@ -108,7 +148,7 @@ export default function BookRide() {
         <CustomButton
           title='Confirm Ride'
           className='my-10'
-          onPress={() => router.push('/(tabs)/home')}
+          onPress={handleConfirmRide}
         />
       </>
     </RideLayout>

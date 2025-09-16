@@ -18,15 +18,7 @@ export const userApi = createApi({
         radiusInKm?: number;
       }) => {
         try {
-          // Add some logging to see what's happening
-          console.log("🔍 Looking for drivers near:", {
-            userLatitude,
-            userLongitude,
-            radiusInKm,
-          });
-
-          // Make the search area bigger (was causing issues)
-          const degreeRange = radiusInKm / 50; // Changed from 111 to 50 for bigger search area
+          const degreeRange = radiusInKm / 50;
 
           const { data, error } = await supabase
             .from("driver_profiles")
@@ -54,15 +46,10 @@ export const userApi = createApi({
             .not("longitude", "is", null)
             .order("last_location_update", { ascending: false });
 
-          // Log the results
-          console.log("📍 Found drivers:", data?.length || 0);
-          console.log("❌ Error:", error);
-
           if (error) {
             return { error: { status: "CUSTOM_ERROR", error: error.message } };
           }
 
-          // Always return an array, even if empty
           return { data: data || [] };
         } catch (error) {
           console.log("💥 Catch error:", error);
@@ -90,7 +77,7 @@ export const userApi = createApi({
               vehicle_year,
               license_number,
               is_available,
-              profiles:id (
+              profiles!driver_profiles_id_fkey (
                 full_name,
                 avatar_url
               )
@@ -101,7 +88,10 @@ export const userApi = createApi({
             .not("longitude", "is", null)
             .order("last_location_update", { ascending: false });
 
+          console.log("Data Available Drivers", data);
+
           if (error) {
+            console.log(error);
             return { error: { status: "CUSTOM_ERROR", error: error.message } };
           }
 
