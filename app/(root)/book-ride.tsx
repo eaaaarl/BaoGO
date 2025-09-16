@@ -54,6 +54,7 @@ export default function BookRide() {
 
       await request({
         riderId: user?.id!,
+        driverId: rawDriverDetails?.id!,
         pickupLocation: userAddress!,
         destinationLocation: destinationAddress!,
         status: 'Pending'

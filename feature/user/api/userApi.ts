@@ -1,6 +1,6 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { AvailableDriver, RequestRidePayload } from "./interface";
+import { AvailableDriver, RequestRidePayload, Ride } from "./interface";
 
 export const userApi = createApi({
   reducerPath: "userApi",
@@ -110,6 +110,7 @@ export const userApi = createApi({
         pickupLocation,
         riderId,
         status,
+        driverId,
       }) => {
         try {
           const { data, error } = await supabase
@@ -117,6 +118,7 @@ export const userApi = createApi({
             .insert([
               {
                 rider_id: riderId,
+                driver_id: driverId,
                 pickup: pickupLocation,
                 destination: destinationLocation,
                 status: status,
@@ -136,6 +138,29 @@ export const userApi = createApi({
         }
       },
     }),
+
+    getRequestRide: builder.query<Ride[], void>({
+      queryFn: async () => {
+        try {
+          const { data, error } = await supabase.from(`request_ride`)
+            .select(`*,driver:driver_profiles!request_ride_driver_id_fkey
+              (*, profile:profiles(*))`);
+
+          if (error) {
+            return {
+              error: { error },
+            };
+          }
+
+          return { data };
+        } catch (error) {
+          console.log("Error fetching request ride", error);
+          return {
+            error,
+          };
+        }
+      },
+    }),
   }),
 });
 
@@ -143,4 +168,5 @@ export const {
   useGetNearbyDriversQuery,
   useGetAvailableDriversQuery,
   useRequestRideMutation,
+  useGetRequestRideQuery,
 } = userApi;

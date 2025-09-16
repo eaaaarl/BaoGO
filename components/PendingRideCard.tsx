@@ -1,7 +1,8 @@
 import { images } from "@/constant/image";
+import { Ride } from "@/feature/user/api/interface";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
-const PendingRideCard = ({ ride }: { ride: any }) => {
+const PendingRideCard = ({ ride }: { ride: Ride }) => {
   return (
     <View className="bg-white rounded-lg p-4 mb-4 shadow-sm border border-gray-100">
       <View className="flex-row justify-between items-center mb-3">
@@ -12,7 +13,7 @@ const PendingRideCard = ({ ride }: { ride: any }) => {
         </View>
         <View className="flex-row items-center">
           <View className="w-2 h-2 bg-orange-500 rounded-full mr-2" />
-          <Text className="text-gray-500 text-xs">Pending...</Text>
+          <Text className="text-gray-500 text-xs">{ride.status}...</Text>
         </View>
       </View>
 
@@ -20,13 +21,13 @@ const PendingRideCard = ({ ride }: { ride: any }) => {
         <View className="flex-row items-center mb-4 p-3 bg-gray-50 rounded-lg">
           <View className="w-12 h-12 rounded-full bg-blue-500 items-center justify-center mr-3">
             <Text className="text-white font-semibold text-lg">
-              {ride.driver.full_name.charAt(0).toUpperCase()}
+              {ride.driver.profile.full_name.charAt(0).toUpperCase()}
             </Text>
           </View>
 
           <View className="flex-1">
             <Text className="font-JakartaSemiBold text-gray-800">
-              {ride.driver.full_name}
+              {ride.driver.profile.full_name}
             </Text>
           </View>
           <Image
@@ -42,7 +43,7 @@ const PendingRideCard = ({ ride }: { ride: any }) => {
           <View className="flex-1">
             <Text className="text-gray-500 text-xs font-Jakarta">From</Text>
             <Text className="text-gray-800 font-semibold" numberOfLines={1}>
-              {ride.origin_address}
+              {ride.pickup}
             </Text>
           </View>
         </View>
@@ -54,7 +55,7 @@ const PendingRideCard = ({ ride }: { ride: any }) => {
           <View className="flex-1">
             <Text className="text-gray-500 text-xs font-Jakarta">To</Text>
             <Text className="text-gray-800 font-semibold" numberOfLines={1}>
-              {ride.destination_address}
+              {ride.destination}
             </Text>
           </View>
         </View>

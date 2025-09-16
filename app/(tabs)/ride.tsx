@@ -1,8 +1,9 @@
 import { ActivityIndicator, FlatList, Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import PendingRideCard from "@/components/PendingRideCard"; // Import your new component
+import PendingRideCard from "@/components/PendingRideCard";
 import { images } from "@/constant/image";
+import { useGetRequestRideQuery } from "@/feature/user/api/userApi";
 import { useAppSelector } from "@/libs/redux/hooks";
 
 const pendingRequests = [
@@ -35,10 +36,11 @@ const WaitingArea = () => {
   const { user } = useAppSelector((state) => state.auth);
   const loading = false;
 
+  const { data } = useGetRequestRideQuery()
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <FlatList
-        data={pendingRequests}
+        data={data}
         renderItem={({ item }) => <PendingRideCard ride={item} />}
         keyExtractor={(item, index) => index.toString()}
         className="px-4"

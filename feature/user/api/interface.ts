@@ -16,6 +16,7 @@ export interface AvailableDriver {
 
 export interface RequestRidePayload {
   riderId: string;
+  driverId: string;
   pickupLocation: string;
   destinationLocation: string;
   status: "Pending" | "Cancel" | "Complete";
