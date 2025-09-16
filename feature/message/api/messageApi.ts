@@ -8,7 +8,7 @@ export const messageApi = createApi({
   endpoints: (builder) => ({
     createChatRoom: builder.mutation<
       any,
-      {driverId: string; riderId: string }
+      { driverId: string; riderId: string }
     >({
       queryFn: async ({ driverId, riderId }) => {
         try {
@@ -124,7 +124,7 @@ export const messageApi = createApi({
             .select(
               `
               *,
-              driver:drivers!chat_rooms_driver_id_fkey(
+              driver:driver_profiles!chat_rooms_driver_id_fkey(
                 id,
                 profiles(full_name, avatar_url),
                 vehicle_type,
@@ -179,18 +179,16 @@ export const messageApi = createApi({
 
     getUserChatRooms: builder.query<
       any[],
-      { userId: string; userType: "rider" | "driver" }
+      { userId: string; driverId: string }
     >({
-      queryFn: async ({ userId, userType }) => {
+      queryFn: async ({ userId, driverId }) => {
         try {
-          const column = userType === "rider" ? "rider_id" : "driver_id";
-
           const { data, error } = await supabase
             .from("chat_rooms")
             .select(
               `
               *,
-              driver:drivers!chat_rooms_driver_id_fkey(
+              driver:driver_profiles!chat_rooms_driver_id_fkey(
                 id,
                 profiles(full_name, avatar_url),
                 vehicle_type,
@@ -208,8 +206,11 @@ export const messageApi = createApi({
               )
             `
             )
-            .eq(column, userId)
+            .eq("rider_id", userId)
+            .eq("driver_id", driverId)
             .order("updated_at", { ascending: false });
+
+          console.log("rtk query chat rooms", data);
 
           if (error) throw error;
           return { data };
