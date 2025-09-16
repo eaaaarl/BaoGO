@@ -12,6 +12,11 @@ interface RideState {
       year: string;
     };
   };
+  riderInfo: {
+    id: string;
+    full_name: string;
+    avatar_url: string;
+  };
 }
 
 const initialState: RideState = {
@@ -26,6 +31,11 @@ const initialState: RideState = {
       year: "",
     },
   },
+  riderInfo: {
+    id: "",
+    full_name: "",
+    avatar_url: "",
+  },
 };
 
 export const rideSlice = createSlice({
@@ -35,8 +45,11 @@ export const rideSlice = createSlice({
     setDriverInfo: (state, action: PayloadAction<RideState["driverInfo"]>) => {
       state.driverInfo = action.payload;
     },
+    setRiderInfo: (state, action: PayloadAction<RideState["riderInfo"]>) => {
+      state.riderInfo = action.payload;
+    },
   },
 });
 
-export const { setDriverInfo } = rideSlice.actions;
+export const { setDriverInfo, setRiderInfo } = rideSlice.actions;
 export const rideReducer = rideSlice.reducer;

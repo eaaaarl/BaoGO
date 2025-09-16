@@ -10,7 +10,7 @@ import {
 export const driverApi = createApi({
   reducerPath: "driverApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["DriverProfile", "DriverLocation"],
+  tagTypes: ["DriverProfile", "DriverLocation", "DriverChatRooms"],
   endpoints: (builder) => ({
     updateDriverProfile: builder.mutation({
       queryFn: async (
@@ -120,7 +120,6 @@ export const driverApi = createApi({
       },
       providesTags: ["DriverProfile", "DriverLocation"],
     }),
-
     updateDriverLocation: builder.mutation({
       queryFn: async (payload: UpdateDriverLocationPayload) => {
         try {
@@ -147,6 +146,34 @@ export const driverApi = createApi({
       },
       invalidatesTags: ["DriverLocation"],
     }),
+    getDriverChatRooms: builder.query<any[], { driverId: string }>({
+      queryFn: async ({ driverId }) => {
+        const { data, error } = await supabase
+          .from("chat_rooms")
+          .select(
+            `*, 
+            rider:profiles!chat_rooms_rider_id_fkey(
+            id,full_name,
+            avatar_url
+            ), 
+            latest_message:messages(
+            message,
+            sent_at,
+            sender_type
+            )`
+          )
+          .eq("driver_id", driverId)
+          .order("updated_at", { ascending: true });
+
+        if (error) {
+          console.log("error get driver chat rooms", error);
+          return { error: { status: "CUSTOM_ERROR", error: error.message } };
+        }
+
+        return { data };
+      },
+      providesTags: ["DriverChatRooms"],
+    }),
   }),
 });
 
@@ -154,4 +181,5 @@ export const {
   useUpdateDriverProfileMutation,
   useGetDriverProfileQuery,
   useUpdateDriverLocationMutation,
+  useGetDriverChatRoomsQuery,
 } = driverApi;

@@ -35,6 +35,7 @@ export default function ChatRoom() {
   const [message, setMessage] = useState('')
   const inset = useSafeAreaInsets()
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
+  const { driverInfo } = useAppSelector((state) => state.ride)
 
   const { data: messages } = useGetChatMessagesQuery({ chatRoomId: id as string })
   const [sendMessage, { isLoading }] = useSendMessageMutation()
@@ -50,16 +51,16 @@ export default function ChatRoom() {
   }
 
   const handleSendMessage = async () => {
-    if (message.trim().length === 0) return
+    if (message.trim().length === 0 || isLoading) return
     try {
-      const res = await sendMessage({
+      await sendMessage({
         chatRoomId: id as string,
         message: message.trim(),
         senderId: currentUserId!,
         senderType: 'rider' as 'rider' | 'driver' | 'system'
       })
 
-      console.log("send message", JSON.stringify(res, null, 2))
+      setMessage('')
 
     } catch (error) {
       console.log("error", error)
@@ -115,7 +116,7 @@ export default function ChatRoom() {
           )}
         </View>
 
-        <Text className={`text-xs text-gray-500 mt-1 ${isCurrentUser ? 'mr-10' : 'ml-10'
+        <Text className={`text-xs text-gray-500 font-normal mt-1 ${isCurrentUser ? 'mr-10' : 'ml-10'
           }`}>
           {formatTime(item.sent_at)}
         </Text>
@@ -134,12 +135,12 @@ export default function ChatRoom() {
         </TouchableOpacity>
 
         <View className="w-10 h-10 rounded-full bg-blue-500 items-center justify-center mr-3">
-          <Text className="text-white font-bold">{currentUserId}</Text>
+          <Text className="text-white font-bold">{driverInfo.full_name.charAt(0)}</Text>
         </View>
 
         <View className="flex-1">
-          <Text className="font-bold text-lg">Jhonn Rex</Text>
-          <Text className="text-sm text-gray-500">Blue Bao-Bao • Online</Text>
+          <Text className="font-bold text-lg">{driverInfo.full_name}</Text>
+          <Text className="text-sm text-gray-500">{driverInfo.vehicle.type} • {driverInfo.vehicle.color}</Text>
         </View>
       </View>
 

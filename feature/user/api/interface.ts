@@ -13,3 +13,10 @@ export interface AvailableDriver {
     full_name: string;
   };
 }
+
+export interface RequestRidePayload {
+  riderId: string;
+  pickupLocation: string;
+  destinationLocation: string;
+  status: "Pending" | "Cancel" | "Complete";
+}

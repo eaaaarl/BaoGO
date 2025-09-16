@@ -1,6 +1,6 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { AvailableDriver } from "./interface";
+import { AvailableDriver, RequestRidePayload } from "./interface";
 
 export const userApi = createApi({
   reducerPath: "userApi",
@@ -60,7 +60,6 @@ export const userApi = createApi({
       },
       providesTags: ["getDriverNearby"],
     }),
-
     getAvailableDrivers: builder.query<AvailableDriver[], void>({
       queryFn: async () => {
         try {
@@ -104,8 +103,44 @@ export const userApi = createApi({
       },
       providesTags: ["AvailableDrivers"],
     }),
+
+    requestRide: builder.mutation<any, RequestRidePayload>({
+      queryFn: async ({
+        destinationLocation,
+        pickupLocation,
+        riderId,
+        status,
+      }) => {
+        try {
+          const { data, error } = await supabase
+            .from(`request_ride`)
+            .insert([
+              {
+                rider_id: riderId,
+                pickup: pickupLocation,
+                destination: destinationLocation,
+                status: status,
+              },
+            ])
+            .select()
+            .single();
+          if (error) throw error;
+
+          console.log("error", error);
+          console.log("user:api:post", data);
+          return { data };
+        } catch (error) {
+          return {
+            error: { status: "CUSTOM_ERROR", error: (error as Error).message },
+          };
+        }
+      },
+    }),
   }),
 });
 
-export const { useGetNearbyDriversQuery, useGetAvailableDriversQuery } =
-  userApi;
+export const {
+  useGetNearbyDriversQuery,
+  useGetAvailableDriversQuery,
+  useRequestRideMutation,
+} = userApi;
