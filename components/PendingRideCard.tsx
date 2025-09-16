@@ -6,7 +6,6 @@ interface PendingRideCardProps {
   ride: Ride;
   onSubmit: (request_id: string) => void;
   isLoading: boolean;
-  isCancelled?: boolean; // Add this prop
 }
 
 const PendingRideCard = ({ ride, isLoading, onSubmit }: PendingRideCardProps) => {
@@ -35,7 +34,7 @@ const PendingRideCard = ({ ride, isLoading, onSubmit }: PendingRideCardProps) =>
             </Text>
           </View>
           <View className="flex-1">
-            <Text className="font-JakartaSemiBold text-gray-800">
+            <Text className="font-semibold text-gray-800">
               {ride.driver.profile.full_name}
             </Text>
           </View>
