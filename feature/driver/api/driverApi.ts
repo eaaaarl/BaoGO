@@ -189,6 +189,8 @@ export const driverApi = createApi({
             .eq("driver_id", driverId)
             .eq("status", "Pending");
 
+          console.log("api rider request ride", data);
+
           if (error) {
             return {
               error: { error },
