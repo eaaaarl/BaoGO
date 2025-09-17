@@ -1,9 +1,11 @@
 import { images } from '@/constant/image';
-import { useGetRiderRequestRideQuery } from '@/feature/driver/api/driverApi';
+import { useAcceptRiderRequestRideMutation, useDeclineRiderRequestRideMutation, useGetRiderRequestRideQuery } from '@/feature/driver/api/driverApi';
 import { Ride } from '@/feature/driver/api/interface';
 import { useAppSelector } from '@/libs/redux/hooks';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Alert,
   FlatList,
   Image,
   RefreshControl,
@@ -11,10 +13,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Request() {
-  const insets = useSafeAreaInsets();
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
   const [refreshing, setRefreshing] = useState(false);
 
@@ -22,13 +23,87 @@ export default function Request() {
     driverId: currentUserId as string
   });
 
-  const handleAccept = (requestId: any) => {
-    alert(`Request ${requestId} accepted! Redirecting to chat...`);
+  const [declineRiderRequest, { isLoading: declineRiderRequestLoading }] = useDeclineRiderRequestRideMutation()
+  const [acceptRiderRequest, { isLoading: acceptRiderRequestLoading }] = useAcceptRiderRequestRideMutation()
+
+  const handleAccept = (requestId: string) => {
+    Alert.alert(
+      "Accept Ride Request",
+      "Are you sure you want to accept this ride request?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Accept",
+          onPress: () => confirmAccept(requestId)
+        },
+      ]
+    );
   };
 
-  const handleDecline = (requestId: any) => {
-    // Handle decline logic here
+  const confirmAccept = async (requestId: string) => {
+    try {
+      const result = await acceptRiderRequest({
+        requestId: requestId,
+        driverId: currentUserId as string
+      }).unwrap();
+
+
+
+      if (result.error) {
+        console.error("Accept error:", result.error);
+        Alert.alert(
+          "Error",
+          result.error.message || "Failed to accept ride request"
+        );
+      } else if (result?.success) {
+        /* Alert.alert(
+          "Success",
+          result?.message || "Ride request accepted!"
+        ); */
+        router.push({
+          pathname: '/(driver)/chat'
+        })
+      }
+    } catch (error) {
+      console.error("Error in confirmAccept:", error);
+    }
+  }
+
+  const handleDecline = (requestId: string) => {
+    Alert.alert(
+      "Decline Ride Request",
+      "Are you sure you want to decline this ride request?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Decline",
+          style: "destructive",
+          onPress: () => confirmDecline(requestId),
+        },
+      ]
+    );
   };
+
+  const confirmDecline = async (requestId: string) => {
+    try {
+      const result = await declineRiderRequest({ requestId }).unwrap();
+
+      if (result.error) {
+        console.error("Decline error:", result.error);
+        Alert.alert(
+          "Error",
+          result.error.message || "Failed to decline ride request"
+        );
+      } else {
+        console.log("Request declined successfully");
+        //Alert.alert("Success", "Ride request declined");
+      }
+    } catch (error) {
+      console.error("Error in confirmDecline:", error);
+      //Alert.alert("Error", "Something went wrong");
+    }
+  };
+
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -81,6 +156,7 @@ export default function Request() {
         <TouchableOpacity
           onPress={() => handleAccept(ride.id)}
           className="flex-1 bg-green-500 py-3 px-4 rounded-xl"
+          disabled={declineRiderRequestLoading}
         >
           <Text className="text-center font-semibold text-white">Accept</Text>
         </TouchableOpacity>
@@ -144,11 +220,6 @@ export default function Request() {
               <Text className="text-2xl font-semibold text-gray-900">
                 Ride Requests
               </Text>
-              <View className="bg-blue-100 px-3 py-1 rounded-full">
-                <Text className="text-blue-600 font-semibold text-sm">
-                  {getRiderRequestRide?.length || 0} pending
-                </Text>
-              </View>
             </View>
             <Text className="text-gray-500 mt-1">Accept rides to start earning</Text>
           </View>

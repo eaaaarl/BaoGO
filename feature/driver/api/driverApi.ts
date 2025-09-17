@@ -11,7 +11,12 @@ import {
 export const driverApi = createApi({
   reducerPath: "driverApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["DriverProfile", "DriverLocation", "DriverChatRooms"],
+  tagTypes: [
+    "DriverProfile",
+    "DriverLocation",
+    "DriverChatRooms",
+    "getRiderRequestRide",
+  ],
   endpoints: (builder) => ({
     updateDriverProfile: builder.mutation({
       queryFn: async (
@@ -189,8 +194,6 @@ export const driverApi = createApi({
             .eq("driver_id", driverId)
             .eq("status", "Pending");
 
-          console.log("api rider request ride", data);
-
           if (error) {
             return {
               error: { error },
@@ -205,6 +208,109 @@ export const driverApi = createApi({
           };
         }
       },
+      providesTags: ["getRiderRequestRide"],
+    }),
+
+    declineRiderRequestRide: builder.mutation<any, { requestId: string }>({
+      queryFn: async ({ requestId }) => {
+        try {
+          const { data, error } = await supabase
+            .from("request_ride")
+            .update({
+              status: "Cancel",
+            })
+            .eq("id", requestId)
+            .eq("status", "Pending")
+            .select()
+            .single();
+
+          if (error) {
+            return {
+              error: { message: error.message },
+            };
+          }
+
+          console.log("dt", data);
+          console.log("err", error);
+
+          return {
+            data: {
+              ...data,
+              success: true,
+              message: "Ride request declined",
+            },
+          };
+        } catch (error) {
+          console.error("Error declining ride request:", error);
+          return {
+            error: { message: "Failed to decline ride request" },
+          };
+        }
+      },
+      invalidatesTags: ["getRiderRequestRide"],
+    }),
+
+    acceptRiderRequestRide: builder.mutation<
+      any,
+      { requestId: string; driverId: string }
+    >({
+      queryFn: async ({ driverId, requestId }) => {
+        try {
+          const { data: currentRequest, error: fetchError } = await supabase
+            .from("request_ride")
+            .select("status, rider_id")
+            .eq("id", requestId)
+            .single();
+
+          if (fetchError || !currentRequest) {
+            return {
+              error: { message: "Request not found" },
+            };
+          }
+
+          if (currentRequest.status !== "Pending") {
+            return {
+              error: { message: "This request is no longer available" },
+            };
+          }
+
+          const { data, error } = await supabase
+            .from("request_ride")
+            .update({
+              status: "Accepted",
+            })
+            .eq("id", requestId)
+            .eq("status", "Pending")
+            .select(
+              `
+          *,
+          rider:profiles!request_ride_rider_id_fkey(*),
+          driver:driver_profiles!request_ride_driver_id_fkey(*, profile:profiles(*))
+        `
+            )
+            .single();
+
+          if (error) {
+            return {
+              error: { message: error.message },
+            };
+          }
+
+          return {
+            data: {
+              ...data,
+              success: true,
+              message: "Ride request accepted successfully!",
+            },
+          };
+        } catch (error) {
+          console.error("Error accepting ride request:", error);
+          return {
+            error: { message: "Failed to accept ride request" },
+          };
+        }
+      },
+      invalidatesTags: ["getRiderRequestRide"],
     }),
   }),
 });
@@ -215,4 +321,6 @@ export const {
   useUpdateDriverLocationMutation,
   useGetDriverChatRoomsQuery,
   useGetRiderRequestRideQuery,
+  useDeclineRiderRequestRideMutation,
+  useAcceptRiderRequestRideMutation,
 } = driverApi;
