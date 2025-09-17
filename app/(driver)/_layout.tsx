@@ -1,3 +1,5 @@
+import { useGetRiderRequestRideQuery } from '@/feature/driver/api/driverApi';
+import { useAppSelector } from '@/libs/redux/hooks';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
@@ -14,6 +16,11 @@ const CustomTabButton = (props: any) => (
 
 export default function DriverLayout() {
   const insets = useSafeAreaInsets();
+
+  const currentUserId = useAppSelector((state) => state.auth.user?.id)
+  const { data: getRiderRequestRideCount } = useGetRiderRequestRideQuery({
+    driverId: currentUserId as string
+  });
   return (
     <Tabs
       screenOptions={{
@@ -50,7 +57,7 @@ export default function DriverLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="car-outline" color={color} size={size} />
           ),
-          //tabBarBadge: 3,
+          tabBarBadge: getRiderRequestRideCount?.length,
           tabBarButton: (props) => <CustomTabButton {...props} />,
         }}
       />

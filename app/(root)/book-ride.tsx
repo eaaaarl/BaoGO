@@ -3,8 +3,9 @@ import RideLayout from '@/components/RideLayout'
 import { icons } from '@/constant/image'
 import { useGetAvailableDriversQuery, useRequestRideMutation } from '@/feature/user/api/userApi'
 import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks'
+import { router } from 'expo-router'
 import React from 'react'
-import { Image, Text, View } from 'react-native'
+import { Alert, Image, Text, View } from 'react-native'
 
 export default function BookRide() {
   const dispatch = useAppDispatch()
@@ -38,37 +39,31 @@ export default function BookRide() {
     if (!driverDetails) return;
 
     try {
-
-      /*  dispatch(setDriverInfo({
-         id: driverDetails.id,
-         full_name: driverDetails.title,
-         avatar_url: driverDetails.profile_image_url,
-         vehicle: {
-           type: driverDetails.vehicle_type,
-           color: driverDetails.vehicle_color,
-           license_number: driverDetails.license_number,
-           year: driverDetails.vehicle_year,
-         },
-       })); */
-
-
-      await request({
+      const res = await request({
         riderId: user?.id!,
         driverId: rawDriverDetails?.id!,
         pickupLocation: userAddress!,
         destinationLocation: destinationAddress!,
         status: 'Pending'
       })
-
-      //router.push({
-      //  pathname: '/(tabs)/Chat',
-      //  params: {
-      //    chatRoomId: 1,
-      //  },
-      //});
-
+      if (res.error) {
+        Alert.alert(
+          "Ride Request Exists",
+          "Looks like you already have a ride request in progress. Would you like to check its status?",
+          [
+            {
+              text: "Check Status",
+              onPress: () => router.push('/(tabs)/ride')
+            },
+            {
+              text: "Cancel",
+              style: "cancel"
+            }
+          ]
+        )
+      }
     } catch (error) {
-      console.error('Error confirming ride:', error);
+      console.error('Unexpected error in handleConfirmRide:', error);
     }
   };
 

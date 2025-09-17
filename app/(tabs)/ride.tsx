@@ -1,18 +1,27 @@
-import { ActivityIndicator, FlatList, Image, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, RefreshControl, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PendingRideCard from "@/components/PendingRideCard";
 import { images } from "@/constant/image";
 import { useGetRequestRideQuery, useUpdateRequestRideMutation } from "@/feature/user/api/userApi";
 import { useAppSelector } from "@/libs/redux/hooks";
+import { useState } from "react";
 
 
 const WaitingArea = () => {
   const { user } = useAppSelector((state) => state.auth);
   const loading = false;
 
-  const { data } = useGetRequestRideQuery()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const { data, refetch } = useGetRequestRideQuery({ riderId: user?.id as string })
   const [updateRequestRide, { isLoading }] = useUpdateRequestRideMutation()
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await refetch()
+    setIsRefreshing(false)
+  }
 
   const handleUpdateRequestRide = async (request_id: string) => {
     if (!request_id) return
@@ -38,6 +47,14 @@ const WaitingArea = () => {
         contentContainerStyle={{
           paddingBottom: 100,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={['#3B82F6']}
+            tintColor="#3B82F6"
+          />
+        }
         ListEmptyComponent={() => (
           <View className="flex flex-col items-center justify-center mt-20">
             {!loading ? (
@@ -48,7 +65,7 @@ const WaitingArea = () => {
                   alt="No pending rides"
                   resizeMode="contain"
                 />
-                <Text className="text-gray-600 text-center mt-4">
+                <Text className="text-gray-600 font-semibold text-center mt-4">
                   No pending ride requests
                 </Text>
               </>
