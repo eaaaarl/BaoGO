@@ -3,6 +3,7 @@ import RideLayout from '@/components/RideLayout'
 import { icons } from '@/constant/image'
 import { useGetAvailableDriversQuery, useRequestRideMutation } from '@/feature/user/api/userApi'
 import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks'
+import { router } from 'expo-router'
 import React from 'react'
 import { Image, Text, View } from 'react-native'
 
@@ -67,6 +68,7 @@ export default function BookRide() {
       //  },
       //});
 
+      router.push('/(tabs)/ride')
     } catch (error) {
       console.error('Error confirming ride:', error);
     }
