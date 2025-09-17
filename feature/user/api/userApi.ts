@@ -118,6 +118,22 @@ export const userApi = createApi({
         driverId,
       }) => {
         try {
+          const { data: existingRequest } = await supabase
+            .from("request_ride")
+            .select("id")
+            .eq("rider_id", riderId)
+            .in("status", ["Pending", "Complete"])
+            .single();
+
+          if (existingRequest) {
+            return {
+              error: {
+                message:
+                  "You already have an active ride request. Please wait for it to be completed or cancel it first.",
+              },
+            };
+          }
+
           const { data, error } = await supabase
             .from(`request_ride`)
             .insert([
@@ -142,27 +158,33 @@ export const userApi = createApi({
           };
         }
       },
+      invalidatesTags: ["getRequestRide"],
     }),
 
-    getRequestRide: builder.query<Ride[], void>({
-      queryFn: async () => {
+    getRequestRide: builder.query<Ride[], { riderId: string }>({
+      queryFn: async ({ riderId }) => {
         try {
-          const { data, error } = await supabase.from(`request_ride`)
-            .select(`*,driver:driver_profiles!request_ride_driver_id_fkey
-              (*, profile:profiles(*))`);
+          const { data, error } = await supabase
+            .from("request_ride")
+            .select(
+              `
+              *,
+              driver:driver_profiles!request_ride_driver_id_fkey(
+                *, 
+                profile:profiles(*)
+              )
+            `
+            )
+            .eq("rider_id", riderId)
+            .in("status", ["Pending", "Completed"]);
 
           if (error) {
-            return {
-              error: { error },
-            };
+            return { error: { error } };
           }
-
           return { data };
         } catch (error) {
-          console.log("Error fetching request ride", error);
-          return {
-            error,
-          };
+          console.log("Error fetching rider active request", error);
+          return { error };
         }
       },
       providesTags: ["getRequestRide"],
@@ -170,7 +192,6 @@ export const userApi = createApi({
 
     updateRequestRide: builder.mutation<any, updateRequestRidePayload>({
       queryFn: async ({ status, request_id }) => {
-        console.log(request_id);
         const { data, error } = await supabase
           .from(`request_ride`)
           .update({

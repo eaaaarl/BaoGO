@@ -61,4 +61,5 @@ export interface Profile {
 export interface updateRequestRidePayload {
   request_id: string;
   status: "Pending" | "Cancel" | "Complete";
+  driverId?: string;
 }

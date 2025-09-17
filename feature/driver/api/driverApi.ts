@@ -186,7 +186,8 @@ export const driverApi = createApi({
               driver:driver_profiles!request_ride_driver_id_fkey
               (*, profile:profiles(*))`
             )
-            .eq("driver_id", driverId);
+            .eq("driver_id", driverId)
+            .eq("status", "Pending");
 
           if (error) {
             return {
