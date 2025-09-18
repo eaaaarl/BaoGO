@@ -2,7 +2,7 @@ import { useGetChatMessagesQuery, useGetChatRoomByIdQuery, useSendMessageMutatio
 import { useAppSelector } from '@/libs/redux/hooks'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -29,31 +29,44 @@ interface Message {
     full_name: string
     avatar_url: string
   }
+  isOptimistic?: boolean
+  isFailed?: boolean
+  error?: any
 }
 
 export default function ChatRoom() {
   const { id, driverId } = useLocalSearchParams()
   const router = useRouter()
   const [message, setMessage] = useState('')
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
+  const [rideStatus, setRideStatus] = useState('pending') // pending, started, completed, cancelled
   const inset = useSafeAreaInsets()
   const flatListRef = useRef<FlatList>(null)
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
+  const currentUser = useAppSelector((state) => state.auth.user)
 
   const { data: messages, isLoading: messagesLoading } = useGetChatMessagesQuery({
     chatRoomId: id as string
   })
-  const { data: chatRoom, isLoading: chatRoomLoading } = useGetChatRoomByIdQuery({ chatRoomId: id as string })
+  const { data: chatRoom } = useGetChatRoomByIdQuery({ chatRoomId: id as string })
   const [sendMessage, { isLoading: sendingMessage }] = useSendMessageMutation()
 
   const otherUser = currentUserId === chatRoom?.driver_id ? chatRoom?.rider : chatRoom?.driver.profile || chatRoom?.driver
 
+  // Combine real messages with optimistic messages (memoized)
+  const allMessages = useMemo(() => {
+    const base = messages || []
+    if (base.length === 0 && optimisticMessages.length === 0) return []
+    return [...base, ...optimisticMessages]
+  }, [messages, optimisticMessages])
+
   useEffect(() => {
-    if (messages && messages.length > 0) {
+    if (allMessages && allMessages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true })
       }, 100)
     }
-  }, [messages])
+  }, [allMessages])
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -64,11 +77,38 @@ export default function ChatRoom() {
     })
   }
 
+  const generateOptimisticId = () => `optimistic-${Date.now()}-${Math.random()}`
+
   const handleSendMessage = async () => {
     if (message.trim().length === 0 || sendingMessage) return
 
     const messageText = message.trim()
+    const optimisticId = generateOptimisticId()
     setMessage('')
+
+    // Create optimistic message
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      chat_room_id: id as string,
+      sender_id: currentUserId!,
+      sender_type: currentUserId === driverId ? 'driver' : 'rider',
+      message: messageText,
+      sent_at: new Date().toISOString(),
+      sender: {
+        id: currentUserId!,
+        full_name: currentUser?.full_name || 'You',
+        avatar_url: currentUser?.avatar_url || ''
+      },
+      isOptimistic: true
+    }
+
+    // Add optimistic message immediately
+    setOptimisticMessages(prev => [...prev, optimisticMessage])
+
+    // Scroll to end
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true })
+    }, 100)
 
     try {
       const senderType = currentUserId === driverId ? 'driver' : 'rider'
@@ -82,23 +122,153 @@ export default function ChatRoom() {
 
       console.log('Message sent successfully:', result)
 
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true })
-      }, 100)
+      // Remove optimistic message since real message will come through the query
+      setOptimisticMessages(prev => prev.filter(msg => msg.id !== optimisticId))
 
     } catch (error: any) {
       console.error("Error sending message:", error)
 
-      setMessage(messageText)
+      // Mark optimistic message as failed
+      setOptimisticMessages(prev =>
+        prev.map(msg =>
+          msg.id === optimisticId
+            ? { ...msg, isFailed: true, isOptimistic: false }
+            : msg
+        )
+      )
 
       Alert.alert(
         'Failed to send message',
         error?.data?.message || 'Please try again',
-        [{ text: 'OK' }]
+        [
+          {
+            text: 'Retry',
+            onPress: () => {
+              setMessage(messageText)
+              // Remove failed message
+              setOptimisticMessages(prev => prev.filter(msg => msg.id !== optimisticId))
+            }
+          },
+          {
+            text: 'Cancel',
+            onPress: () => {
+              // Remove failed message
+              setOptimisticMessages(prev => prev.filter(msg => msg.id !== optimisticId))
+            }
+          }
+        ]
       )
     }
   }
 
+  const handleRideAction = async (action: 'start' | 'cancel' | 'complete') => {
+    const actionMessages = {
+      start: 'Ride has been started 🚗',
+      cancel: 'Ride has been cancelled ❌',
+      complete: 'Ride has been completed ✅'
+    }
+
+    Alert.alert(
+      `${action.charAt(0).toUpperCase() + action.slice(1)} Ride`,
+      `Are you sure you want to ${action} this ride?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            try {
+              // Update ride status locally first
+              const newStatus = action === 'start' ? 'started' : action === 'cancel' ? 'cancelled' : 'completed'
+              setRideStatus(newStatus)
+
+              // Send system message
+              const systemMessage: Message = {
+                id: generateOptimisticId(),
+                chat_room_id: id as string,
+                sender_id: 'system',
+                sender_type: 'system',
+                message: actionMessages[action],
+                sent_at: new Date().toISOString(),
+                sender: {
+                  id: 'system',
+                  full_name: 'System',
+                  avatar_url: ''
+                },
+                isOptimistic: true
+              }
+
+              setOptimisticMessages(prev => [...prev, systemMessage])
+
+              // Here you would make the actual API call to update ride status
+              // await updateRideStatus({ rideId: id, status: newStatus })
+
+              console.log(`Ride ${action} successfully`)
+            } catch (error) {
+              console.error(`Error ${action}ing ride:`, error)
+              // Revert status on error
+              setRideStatus('pending')
+              Alert.alert('Error', `Failed to ${action} ride. Please try again.`)
+            }
+          }
+        }
+      ]
+    )
+  }
+
+  const renderRideControls = () => {
+    const isDriver = currentUserId === chatRoom?.driver_id
+    // For testing purposes, you can temporarily return the controls regardless
+    if (!isDriver) return null
+
+    return (
+      <View className="px-4 py-3">
+        <View className="flex-row gap-3">
+          {rideStatus === 'pending' && (
+            <>
+              <TouchableOpacity
+                onPress={() => handleRideAction('start')}
+                className="flex-1 bg-green-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
+              >
+                <Ionicons name="play-circle" size={20} color="white" />
+                <Text className="text-white font-semibold ml-2">Start Ride</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => handleRideAction('cancel')}
+                className="flex-1 bg-red-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
+              >
+                <Ionicons name="close-circle" size={20} color="white" />
+                <Text className="text-white font-semibold ml-2">Cancel Ride</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {rideStatus === 'started' && (
+            <TouchableOpacity
+              onPress={() => handleRideAction('complete')}
+              className="flex-1 bg-blue-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
+            >
+              <Ionicons name="checkmark-circle" size={20} color="white" />
+              <Text className="text-white font-semibold ml-2">Complete Ride</Text>
+            </TouchableOpacity>
+          )}
+
+          {(rideStatus === 'cancelled' || rideStatus === 'completed') && (
+            <View className="flex-1 bg-gray-300 rounded-xl py-3 px-4 flex-row items-center justify-center">
+              <Ionicons
+                name={rideStatus === 'completed' ? "checkmark-circle" : "close-circle"}
+                size={20}
+                color="#666"
+              />
+              <Text className="text-gray-600 font-semibold ml-2 capitalize">
+                Ride {rideStatus}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    )
+  }
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isCurrentUser = item.sender_id === currentUserId
@@ -130,14 +300,34 @@ export default function ChatRoom() {
             </View>
           )}
 
-          <View className={`rounded-2xl px-4 py-3 ${isCurrentUser
-            ? 'bg-blue-500 rounded-br-md'
+          <View className={`rounded-2xl px-4 py-3 relative ${isCurrentUser
+            ? `${item.isFailed ? 'bg-red-100 border border-red-300' : item.isOptimistic ? 'bg-blue-300' : 'bg-blue-500'} rounded-br-md`
             : 'bg-gray-200 rounded-bl-md'
             }`}>
-            <Text className={`text-base font-semibold ${isCurrentUser ? 'text-white' : 'text-black'
+            <Text className={`text-base font-semibold ${isCurrentUser
+              ? item.isFailed ? 'text-red-700' : 'text-white'
+              : 'text-black'
               }`}>
               {item.message}
             </Text>
+
+            {item.isOptimistic && (
+              <View className="absolute -bottom-1 -right-1 bg-gray-400 rounded-full w-4 h-4 items-center justify-center">
+                <ActivityIndicator size="small" color="white" />
+              </View>
+            )}
+
+            {item.isFailed && (
+              <TouchableOpacity
+                className="absolute -bottom-1 -right-1 bg-red-500 rounded-full w-4 h-4 items-center justify-center"
+                onPress={() => {
+                  setMessage(item.message)
+                  setOptimisticMessages(prev => prev.filter(msg => msg.id !== item.id))
+                }}
+              >
+                <Ionicons name="refresh" size={10} color="white" />
+              </TouchableOpacity>
+            )}
           </View>
 
           {isCurrentUser && (
@@ -152,6 +342,7 @@ export default function ChatRoom() {
         <Text className={`text-xs text-gray-500 font-normal mt-1 ${isCurrentUser ? 'mr-10' : 'ml-10'
           }`}>
           {formatTime(item.sent_at)}
+          {item.isFailed && <Text className="text-red-500"> • Failed to send</Text>}
         </Text>
       </View>
     )
@@ -168,7 +359,7 @@ export default function ChatRoom() {
       </Text>
 
       <Text className="text-gray-500 text-center leading-6 mb-6">
-        Say hello to your driver! They'll receive your message and can respond to coordinate your ride.
+        Say hello to your driver! They’ll receive your message and can respond to coordinate your ride.
       </Text>
 
       <View className="bg-blue-50 rounded-xl p-4 w-full">
@@ -179,24 +370,23 @@ export default function ChatRoom() {
           className="py-2"
           onPress={() => setMessage("Hello! I'm ready for pickup.")}
         >
-          <Text className="text-blue-700">"Hello! I'm ready for pickup."</Text>
+          <Text className="text-blue-700">“Hello! I’m ready for pickup.”</Text>
         </TouchableOpacity>
         <TouchableOpacity
           className="py-2"
           onPress={() => setMessage("What's your ETA?")}
         >
-          <Text className="text-blue-700">"What's your ETA?"</Text>
+          <Text className="text-blue-700">“What’s your ETA?”</Text>
         </TouchableOpacity>
         <TouchableOpacity
           className="py-2"
           onPress={() => setMessage("I'm at the pickup location.")}
         >
-          <Text className="text-blue-700">"I'm at the pickup location."</Text>
+          <Text className="text-blue-700">“I’m at the pickup location.”</Text>
         </TouchableOpacity>
       </View>
     </View>
   )
-
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -218,6 +408,9 @@ export default function ChatRoom() {
           <Text className="font-bold text-lg">
             {otherUser?.full_name}
           </Text>
+          <Text className="text-xs text-gray-500 capitalize">
+            Ride Status: {rideStatus}
+          </Text>
         </View>
       </View>
 
@@ -227,7 +420,7 @@ export default function ChatRoom() {
         <>
           <FlatList
             ref={flatListRef}
-            data={messages}
+            data={allMessages}
             renderItem={renderMessage}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{
@@ -237,11 +430,13 @@ export default function ChatRoom() {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={renderEmptyState}
             onContentSizeChange={() => {
-              if (messages && messages.length > 0) {
+              if (allMessages && allMessages.length > 0) {
                 flatListRef.current?.scrollToEnd({ animated: false })
               }
             }}
           />
+
+          {renderRideControls()}
 
           <KeyboardAvoidingView
             behavior={Platform.OS === 'android' ? 'padding' : undefined}
@@ -279,7 +474,6 @@ export default function ChatRoom() {
           </KeyboardAvoidingView>
         </>
       )}
-
     </SafeAreaView>
   )
 }
