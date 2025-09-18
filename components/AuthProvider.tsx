@@ -21,11 +21,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           } else if (role === 'Rider') {
             router.replace('/(tabs)/home')
           } else {
-            router.replace('/(auth)')
+            router.replace('/(auth)/welcome')
           }
         } else {
           dispatch(clearAuth())
-          router.replace('/(auth)')
+          router.replace('/(auth)/welcome')
         }
       } catch (error) {
         console.error('Error checking initial session:', error)

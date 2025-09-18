@@ -25,6 +25,7 @@ import baobaoDriver from "@/assets/images/bg-baobao.png";
 import message from "@/assets/images/message.png";
 import noResult from "@/assets/images/no-result.png";
 import onboarding2 from "@/assets/images/onboarding2.png";
+import splash from "@/assets/images/splash.png";
 
 export const images = {
   baobaoAuth,
@@ -34,6 +35,7 @@ export const images = {
   baobaoDriver,
   baobao,
   baobao2,
+  splash,
 };
 
 export const icons = {
