@@ -1,6 +1,10 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { ChatRoom, CreateChatRoomPayload } from "./inteface";
+import {
+  ChatRoom,
+  CreateChatRoomPayload,
+  SendMessagePayload,
+} from "./inteface";
 
 export const messageApi = createApi({
   reducerPath: "messageApi",
@@ -230,6 +234,70 @@ export const messageApi = createApi({
       },
       providesTags: ["getChatRoom"],
     }),
+
+    sendMessage: builder.mutation<any, SendMessagePayload>({
+      queryFn: async ({ chatRoomId, senderId, senderType, message }) => {
+        try {
+          // Insert the message
+          const { data: messageData, error: messageError } = await supabase
+            .from("messages")
+            .insert([
+              {
+                chat_room_id: chatRoomId,
+                sender_id: senderId,
+                sender_type: senderType,
+                message: message.trim(),
+                sent_at: new Date().toISOString(),
+              },
+            ])
+            .select(
+              `
+              *,
+              sender:profiles!messages_sender_id_fkey(
+                id,
+                full_name,
+                avatar_url
+              )
+            `
+            )
+            .single();
+
+          if (messageError) {
+            return {
+              error: { message: messageError.message },
+            };
+          }
+
+          // Update the chat room's updated_at timestamp
+          const { error: updateError } = await supabase
+            .from("chat_rooms")
+            .update({
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", chatRoomId);
+
+          if (updateError) {
+            console.warn("Failed to update chat room timestamp:", updateError);
+          }
+
+          return {
+            data: {
+              data: messageData,
+              success: true,
+              message: "Message sent successfully",
+            },
+          };
+        } catch (error) {
+          console.error("Error sending message:", error);
+          return {
+            error: {
+              message: "Failed to send message",
+            },
+          };
+        }
+      },
+      invalidatesTags: ["getMessages", "getChatRoom"],
+    }),
   }),
 });
 
@@ -239,4 +307,5 @@ export const {
   useGetChatMessagesQuery,
   useGetUserInfoQuery,
   useGetChatRoomByIdQuery,
+  useSendMessageMutation,
 } = messageApi;

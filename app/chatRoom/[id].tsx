@@ -1,10 +1,11 @@
-import { useGetChatMessagesQuery, useGetChatRoomByIdQuery } from '@/feature/message/api/messageApi'
+import { useGetChatMessagesQuery, useGetChatRoomByIdQuery, useSendMessageMutation } from '@/feature/message/api/messageApi'
 import { useAppSelector } from '@/libs/redux/hooks'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Platform,
   SafeAreaView,
@@ -31,7 +32,7 @@ interface Message {
 }
 
 export default function ChatRoom() {
-  const { id } = useLocalSearchParams()
+  const { id, driverId } = useLocalSearchParams()
   const router = useRouter()
   const [message, setMessage] = useState('')
   const inset = useSafeAreaInsets()
@@ -42,9 +43,7 @@ export default function ChatRoom() {
     chatRoomId: id as string
   })
   const { data: chatRoom, isLoading: chatRoomLoading } = useGetChatRoomByIdQuery({ chatRoomId: id as string })
-  //const [sendMessage, { isLoading: sendingMessage }] = useSendMessageMutation()
-  console.log('chatroomid', id)
-  console.log("messages", JSON.stringify(messages, null, 2))
+  const [sendMessage, { isLoading: sendingMessage }] = useSendMessageMutation()
 
   const otherUser = currentUserId === chatRoom?.driver_id ? chatRoom?.rider : chatRoom?.driver.profile || chatRoom?.driver
 
@@ -66,29 +65,40 @@ export default function ChatRoom() {
   }
 
   const handleSendMessage = async () => {
-    if (message.trim().length === 0) return
+    if (message.trim().length === 0 || sendingMessage) return
 
     const messageText = message.trim()
-    setMessage('') // Clear input immediately for better UX
+    setMessage('')
 
     try {
-      /* await sendMessage({
+      const senderType = currentUserId === driverId ? 'driver' : 'rider'
+
+      const result = await sendMessage({
         chatRoomId: id as string,
         message: messageText,
         senderId: currentUserId!,
-        senderType: 'rider' as 'rider' | 'driver' | 'system'
-      }) */
+        senderType: senderType
+      }).unwrap()
 
-      // For now, just log the message
-      console.log('Sending message:', messageText)
+      console.log('Message sent successfully:', result)
 
-      // You can add optimistic updates here if needed
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true })
+      }, 100)
 
-    } catch (error) {
-      console.log("error", error)
-      setMessage(messageText) // Restore message on error
+    } catch (error: any) {
+      console.error("Error sending message:", error)
+
+      setMessage(messageText)
+
+      Alert.alert(
+        'Failed to send message',
+        error?.data?.message || 'Please try again',
+        [{ text: 'OK' }]
+      )
     }
   }
+
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isCurrentUser = item.sender_id === currentUserId
@@ -124,7 +134,7 @@ export default function ChatRoom() {
             ? 'bg-blue-500 rounded-br-md'
             : 'bg-gray-200 rounded-bl-md'
             }`}>
-            <Text className={`text-base ${isCurrentUser ? 'text-white' : 'text-black'
+            <Text className={`text-base font-semibold ${isCurrentUser ? 'text-white' : 'text-black'
               }`}>
               {item.message}
             </Text>
@@ -208,68 +218,68 @@ export default function ChatRoom() {
           <Text className="font-bold text-lg">
             {otherUser?.full_name}
           </Text>
-          {/* <Text className="text-sm text-gray-500">
-            {chatRoom?.driver?.vehicle?.type} • {chatRoom?.driver?.vehicle?.color}
-          </Text> */}
         </View>
       </View>
 
       {messagesLoading ? (
         LoadingOverlay()
       ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{
-            paddingVertical: 10,
-            flexGrow: 1
-          }}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
-          onContentSizeChange={() => {
-            if (messages && messages.length > 0) {
-              flatListRef.current?.scrollToEnd({ animated: false })
-            }
-          }}
-        />
+        <>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingVertical: 10,
+              flexGrow: 1
+            }}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyState}
+            onContentSizeChange={() => {
+              if (messages && messages.length > 0) {
+                flatListRef.current?.scrollToEnd({ animated: false })
+              }
+            }}
+          />
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'android' ? 'padding' : undefined}
+            className="border-t border-gray-200 bg-white"
+            style={{ marginBottom: inset.bottom }}
+          >
+            <View className="flex-row items-center p-4">
+              <View className="flex-1 flex-row items-center bg-gray-100 rounded-full px-4 py-2 mr-3">
+                <TextInput
+                  value={message}
+                  onChangeText={setMessage}
+                  placeholder="Type a message..."
+                  multiline
+                  maxLength={500}
+                  className="flex-1 text-base font-semibold max-h-20"
+                  style={{ paddingTop: 8, paddingBottom: 8 }}
+                  placeholderTextColor="#666"
+                  onSubmitEditing={handleSendMessage}
+                />
+              </View>
+
+              <TouchableOpacity
+                onPress={handleSendMessage}
+                disabled={message.trim().length === 0}
+                className={`w-10 h-10 rounded-full items-center justify-center ${message.trim().length > 0 ? 'bg-blue-500' : 'bg-gray-300'
+                  }`}
+              >
+                <Ionicons
+                  name="send"
+                  size={18}
+                  color={message.trim().length > 0 ? "white" : "#666"}
+                />
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </>
       )}
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'android' ? 'padding' : undefined}
-        className="border-t border-gray-200 bg-white"
-        style={{ marginBottom: inset.bottom }}
-      >
-        <View className="flex-row items-center p-4">
-          <View className="flex-1 flex-row items-center bg-gray-100 rounded-full px-4 py-2 mr-3">
-            <TextInput
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Type a message..."
-              multiline
-              maxLength={500}
-              className="flex-1 text-base max-h-20"
-              style={{ paddingTop: 8, paddingBottom: 8 }}
-              placeholderTextColor="#666"
-              onSubmitEditing={handleSendMessage}
-            />
-          </View>
-
-          <TouchableOpacity
-            onPress={handleSendMessage}
-            disabled={message.trim().length === 0}
-            className={`w-10 h-10 rounded-full items-center justify-center ${message.trim().length > 0 ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
-          >
-            <Ionicons
-              name="send"
-              size={18}
-              color={message.trim().length > 0 ? "white" : "#666"}
-            />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
