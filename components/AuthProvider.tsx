@@ -53,7 +53,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           }
         } else {
           dispatch(clearAuth())
-          router.replace('/(auth)')
+          router.replace('/(auth)/welcome')
         }
       }
     )

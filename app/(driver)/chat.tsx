@@ -28,6 +28,17 @@ export default function Chat() {
     return messages[messages.length - 1]
   }
 
+  if (driverChatRoomsLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="px-5 py-3 border-b border-gray-100" style={{ paddingTop: inset.top }}>
+          <Text className="text-2xl font-semibold">Messages</Text>
+        </View>
+        <LoadingOverlay />
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="px-5 py-3 border-b border-gray-100" style={{ paddingTop: inset.top }}>
@@ -97,7 +108,6 @@ export default function Chat() {
         contentContainerStyle={{ flexGrow: 1 }}
       />
 
-      {driverChatRoomsLoading && <LoadingOverlay />}
     </SafeAreaView>
   )
 }
@@ -123,7 +133,7 @@ function renderEmptyState() {
 
 function LoadingOverlay() {
   return (
-    <View className="absolute inset-0 bg-black/20 flex-1 justify-center items-center z-50">
+    <View className="absolute inset-0 bg-black/5 flex-1 justify-center items-center z-50">
       <View className="bg-white rounded-2xl p-4 mx-8 items-center shadow-lg">
         <ActivityIndicator size="large" color="#0286FF" />
       </View>

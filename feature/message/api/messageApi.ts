@@ -1,6 +1,6 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CreateChatRoomPayload } from "./inteface";
+import { ChatRoom, CreateChatRoomPayload } from "./inteface";
 
 export const messageApi = createApi({
   reducerPath: "messageApi",
@@ -42,7 +42,48 @@ export const messageApi = createApi({
         }
       },
     }),
+
+    getChatRoom: builder.query<ChatRoom[], { rider_id: string }>({
+      queryFn: async ({ rider_id }) => {
+        try {
+          const { data, error } = await supabase
+            .from("chat_rooms")
+            .select(
+              `*,
+            driver:driver_profiles!chat_rooms_driver_id_fkey(*, profile:profiles(*)), 
+            latest_message:messages(
+            message,
+            sent_at,
+            sender_type)
+            `
+            )
+            .eq("rider_id", rider_id)
+            .order("updated_at", { ascending: true });
+
+          if (error) {
+            return {
+              error: { message: error.message },
+            };
+          }
+
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Data chat room fetched",
+            },
+          };
+        } catch (error) {
+          console.error("error get chat room", error);
+          return {
+            error: {
+              message: "Internal Server error",
+            },
+          };
+        }
+      },
+    }),
   }),
 });
 
-export const { useCreateChatRoomMutation } = messageApi;
+export const { useCreateChatRoomMutation, useGetChatRoomQuery } = messageApi;
