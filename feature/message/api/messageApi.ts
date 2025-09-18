@@ -5,20 +5,23 @@ import { ChatRoom, CreateChatRoomPayload } from "./inteface";
 export const messageApi = createApi({
   reducerPath: "messageApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["getChatRoom", "getMessages"],
+  tagTypes: ["getChatRoom", "getMessages", "UserInfo"],
   endpoints: (builder) => ({
     createChatRoom: builder.mutation<any, CreateChatRoomPayload>({
       queryFn: async ({ driverId, riderId }) => {
         try {
           const { data, error } = await supabase
             .from("chat_rooms")
-            .insert([
-              {
-                driver_id: driverId,
-                rider_id: riderId,
-                status: "Active",
-              },
-            ])
+            .upsert(
+              [
+                {
+                  driver_id: driverId,
+                  rider_id: riderId,
+                  status: "Active",
+                },
+              ],
+              { onConflict: "driver_id,rider_id" }
+            )
             .single();
 
           if (error) {
@@ -83,7 +86,157 @@ export const messageApi = createApi({
         }
       },
     }),
+
+    getChatMessages: builder.query<any, { chatRoomId: string }>({
+      queryFn: async ({ chatRoomId }) => {
+        try {
+          const { data, error } = await supabase
+            .from("messages")
+            .select(
+              `
+              *,
+              sender:profiles!messages_sender_id_fkey(
+                id,
+                full_name,
+                avatar_url
+              )
+            `
+            )
+            .eq("chat_room_id", chatRoomId)
+            .order("sent_at", { ascending: true });
+
+          if (error) {
+            return {
+              error: { message: error.message },
+            };
+          }
+
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Messages fetched successfully",
+            },
+          };
+        } catch (error) {
+          console.error("Error at getChatMessages", error);
+          return {
+            error: {
+              message: "Internal Server Error",
+            },
+          };
+        }
+      },
+      providesTags: ["getMessages"],
+    }),
+
+    getUserInfo: builder.query<
+      any,
+      { userId: string; userType: "driver" | "rider" }
+    >({
+      queryFn: async ({ userId, userType }) => {
+        try {
+          let query;
+
+          if (userType === "driver") {
+            query = supabase
+              .from("driver_profiles")
+              .select(
+                `
+                *,
+                profile:profiles(*),
+                vehicle:vehicles(*)
+              `
+              )
+              .eq("id", userId)
+              .single();
+          } else {
+            query = supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", userId)
+              .single();
+          }
+
+          const { data, error } = await query;
+
+          if (error) {
+            return {
+              error: { message: error.message },
+            };
+          }
+
+          return {
+            data,
+            meta: {
+              success: true,
+              message: `${userType} info fetched successfully`,
+            },
+          };
+        } catch (error) {
+          console.error(`Error getting ${userType} info:`, error);
+          return {
+            error: {
+              message: "Failed to fetch user information",
+            },
+          };
+        }
+      },
+      providesTags: ["UserInfo"],
+    }),
+
+    getChatRoomById: builder.query<ChatRoom, { chatRoomId: string }>({
+      queryFn: async ({ chatRoomId }) => {
+        try {
+          const { data, error } = await supabase
+            .from("chat_rooms")
+            .select(
+              `
+              *,
+              driver:driver_profiles!chat_rooms_driver_id_fkey(
+                *,
+                profile:profiles(*)
+              ),
+              rider:profiles!chat_rooms_rider_id_fkey(*),
+              latest_message:messages(
+                message,
+                sent_at,
+                sender_type
+              )
+            `
+            )
+            .eq("id", chatRoomId)
+            .single(); // This will return a single object, not an array
+
+          if (error) {
+            return {
+              error: { message: error.message },
+            };
+          }
+
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Chat room fetched successfully",
+            },
+          };
+        } catch (error) {
+          console.error("Error getting chat room:", error);
+          return {
+            error: { message: "Failed to fetch chat room" },
+          };
+        }
+      },
+      providesTags: ["getChatRoom"],
+    }),
   }),
 });
 
-export const { useCreateChatRoomMutation, useGetChatRoomQuery } = messageApi;
+export const {
+  useCreateChatRoomMutation,
+  useGetChatRoomQuery,
+  useGetChatMessagesQuery,
+  useGetUserInfoQuery,
+  useGetChatRoomByIdQuery,
+} = messageApi;

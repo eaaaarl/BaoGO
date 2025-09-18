@@ -123,7 +123,7 @@ export default function Index() {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   const loading = false;
-  const { data: profileUser } = useGetProfileUserQuery(user?.id as string);
+  const { data: profileUser, isLoading: profileUserLoading } = useGetProfileUserQuery(user?.id as string);
 
   const requestLocationPermission = async () => {
     try {
@@ -212,6 +212,7 @@ export default function Index() {
     getCurrentLocation();
   };
 
+
   return (
     <SafeAreaView className='bg-general-500'>
       <FlatList
@@ -272,7 +273,7 @@ export default function Index() {
 
             <>
               <View className="flex flex-row items-center justify-between mt-5 mb-3">
-                <Text className="text-xl font-JakartaBold">
+                <Text className="text-xl font-semibold">
                   Your current location
                 </Text>
               </View>
@@ -310,4 +311,14 @@ export default function Index() {
       />
     </SafeAreaView>
   );
+}
+
+function LoadingOverlay() {
+  return (
+    <View className="absolute inset-0 bg-black/5 flex-1 justify-center items-center z-50">
+      <View className="bg-white rounded-2xl p-4 mx-8 items-center shadow-lg">
+        <ActivityIndicator size="large" color="#0286FF" />
+      </View>
+    </View>
+  )
 }

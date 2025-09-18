@@ -89,6 +89,7 @@ export default function Layout() {
             <TabIcon source={icons.chat} focused={focused} />
           ),
           tabBarButton: (props) => <CustomTabButton {...props} />,
+          //tabBarBadge: 1
         }}
       />
       <Tabs.Screen
