@@ -196,7 +196,7 @@ export default function Index() {
     await supabase.auth.signOut();
     dispatch(clearSelectedDriver());
     dispatch(clearLocation());
-    router.replace('/(auth)');
+    router.replace('/(auth)/welcome');
   };
 
   const handleDestinationPress = (location: {
@@ -253,12 +253,12 @@ export default function Index() {
         ListHeaderComponent={
           <>
             <View className="flex flex-row items-center justify-between my-5">
-              <Text className="text-2xl font-JakartaExtraBold">
-                Welcome {profileUser?.full_name}👋
+              <Text className="text-2xl font-semibold">
+                Welcome {profileUser?.full_name}
               </Text>
               <TouchableOpacity
                 onPress={handleSignOut}
-                className="justify-center items-center w-10 h-10 rounded-full bg-white"
+                className="justify-center items-center w-12 h-12 rounded-full bg-white"
               >
                 <Image source={icons.out} className="w-4 h-4" />
               </TouchableOpacity>

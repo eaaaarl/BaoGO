@@ -1,10 +1,12 @@
 import { images } from '@/constant/image';
 import { useAcceptRiderRequestRideMutation, useDeclineRiderRequestRideMutation, useGetRiderRequestRideQuery } from '@/feature/driver/api/driverApi';
 import { Ride } from '@/feature/driver/api/interface';
+import { useCreateChatRoomMutation } from '@/feature/message/api/messageApi';
 import { useAppSelector } from '@/libs/redux/hooks';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Image,
@@ -25,8 +27,10 @@ export default function Request() {
 
   const [declineRiderRequest, { isLoading: declineRiderRequestLoading }] = useDeclineRiderRequestRideMutation()
   const [acceptRiderRequest, { isLoading: acceptRiderRequestLoading }] = useAcceptRiderRequestRideMutation()
+  const [createChatRoom, { isLoading: createChatRoomLoading }] = useCreateChatRoomMutation()
 
-  const handleAccept = (requestId: string) => {
+
+  const handleAccept = (ride: Ride) => {
     Alert.alert(
       "Accept Ride Request",
       "Are you sure you want to accept this ride request?",
@@ -34,16 +38,16 @@ export default function Request() {
         { text: "Cancel", style: "cancel" },
         {
           text: "Accept",
-          onPress: () => confirmAccept(requestId)
+          onPress: () => confirmAccept(ride)
         },
       ]
     );
   };
 
-  const confirmAccept = async (requestId: string) => {
+  const confirmAccept = async (ride: Ride) => {
     try {
       const result = await acceptRiderRequest({
-        requestId: requestId,
+        requestId: ride.id,
         driverId: currentUserId as string
       }).unwrap();
 
@@ -56,10 +60,12 @@ export default function Request() {
           result.error.message || "Failed to accept ride request"
         );
       } else if (result?.success) {
-        /* Alert.alert(
-          "Success",
-          result?.message || "Ride request accepted!"
-        ); */
+
+        await createChatRoom({
+          driverId: currentUserId as string,
+          riderId: ride.rider_id,
+        })
+
         router.push({
           pathname: '/(driver)/chat'
         })
@@ -111,6 +117,8 @@ export default function Request() {
     setRefreshing(false);
   };
 
+
+
   const RequestCard = ({ ride }: { ride: Ride }) => (
     <View className="bg-white rounded-2xl p-4 my-2 shadow-sm border border-gray-100">
       <View className="flex-row items-center justify-between mb-3">
@@ -149,12 +157,13 @@ export default function Request() {
         <TouchableOpacity
           onPress={() => handleDecline(ride.id)}
           className="flex-1 bg-gray-100 py-3 px-4 rounded-xl"
+          disabled={acceptRiderRequestLoading}
         >
           <Text className="text-center font-semibold text-gray-700">Decline</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => handleAccept(ride.id)}
+          onPress={() => handleAccept(ride)}
           className="flex-1 bg-green-500 py-3 px-4 rounded-xl"
           disabled={declineRiderRequestLoading}
         >
@@ -198,6 +207,14 @@ export default function Request() {
     </View>
   );
 
+  const LoadingOverlay = () => (
+    <View className="absolute inset-0 bg-black/20 flex-1 justify-center items-center z-50">
+      <View className="bg-white rounded-2xl p-4 mx-8 items-center shadow-lg">
+        <ActivityIndicator size="large" color="#0286FF" />
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <FlatList
@@ -229,6 +246,8 @@ export default function Request() {
           !getRiderRequestRide?.length ? { flex: 1 } : undefined
         }
       />
+
+      {createChatRoomLoading && <LoadingOverlay />}
     </SafeAreaView>
   );
 }
