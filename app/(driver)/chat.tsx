@@ -1,6 +1,7 @@
 import { images } from '@/constant/image'
 import { useGetDriverChatRoomsQuery } from '@/feature/driver/api/driverApi'
 import { useAppSelector } from '@/libs/redux/hooks'
+import { router } from 'expo-router'
 import React from 'react'
 import { ActivityIndicator, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -10,6 +11,7 @@ export default function Chat() {
   const { data: driverChatRooms, isLoading: driverChatRoomsLoading } = useGetDriverChatRoomsQuery({ driverId: user?.id! })
   const inset = useSafeAreaInsets()
 
+  console.log(JSON.stringify(driverChatRooms, null, 2))
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -39,6 +41,16 @@ export default function Chat() {
     )
   }
 
+  const handleChatPress = async (item: any) => {
+    router.push({
+      pathname: '/chatRoom/[id]',
+      params: {
+        id: item.id,
+        driverId: item.driver_id
+      }
+    })
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="px-5 py-3 border-b border-gray-100" style={{ paddingTop: inset.top }}>
@@ -52,6 +64,7 @@ export default function Chat() {
           return (
             <TouchableOpacity
               className='flex-row items-center p-4 border-b border-gray-100'
+              onPress={() => handleChatPress(item)}
             >
               <View className='w-12 h-12 rounded-full bg-blue-500 items-center justify-center mr-3'>
                 <Text className='text-white font-semibold text-lg'>

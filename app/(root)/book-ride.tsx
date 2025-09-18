@@ -53,7 +53,7 @@ export default function BookRide() {
           [
             {
               text: "Check Status",
-              onPress: () => router.push('/(tabs)/ride')
+              onPress: () => router.replace('/(tabs)/ride')
             },
             {
               text: "Cancel",
@@ -61,6 +61,9 @@ export default function BookRide() {
             }
           ]
         )
+      } else {
+        router.replace('/(tabs)/ride')
+
       }
     } catch (error) {
       console.error('Unexpected error in handleConfirmRide:', error);

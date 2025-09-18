@@ -1,7 +1,8 @@
 import { images } from '@/constant/image'
 import { ChatRoom } from '@/feature/message/api/inteface'
 import { useGetChatRoomQuery } from '@/feature/message/api/messageApi'
-import { useAppSelector } from '@/libs/redux/hooks'
+import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks'
+import { setDriverInfo } from '@/libs/redux/state/rideSlice'
 import { router } from 'expo-router'
 import React from 'react'
 import { ActivityIndicator, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View } from 'react-native'
@@ -14,7 +15,7 @@ export default function Chat() {
     rider_id: user?.id as string
   })
 
-  console.log('data', JSON.stringify(chatRooms, null, 2))
+  const dispatch = useAppDispatch()
 
   const inset = useSafeAreaInsets()
 
@@ -37,7 +38,18 @@ export default function Chat() {
     }
   }
 
-  const handleChatPress = (chatRoom: any) => {
+  const handleChatPress = (chatRoom: ChatRoom) => {
+    dispatch(setDriverInfo({
+      full_name: chatRoom.driver.profile.full_name,
+      avatar_url: chatRoom.driver.profile.avatar_url!,
+      id: chatRoom.driver_id,
+      vehicle: {
+        color: chatRoom.driver.vehicle_color,
+        license_number: chatRoom.driver.license_number,
+        type: chatRoom.driver.vehicle_type,
+        year: String(chatRoom.driver.vehicle_year)
+      }
+    }))
     router.push({
       pathname: '/chatRoom/[id]',
       params: {
@@ -149,8 +161,8 @@ export default function Chat() {
 
 function LoadingOverlay() {
   return (
-    <View className="flex-1 justify-center items-center bg-white">
-      <View className="bg-white rounded-2xl p-8 items-center">
+    <View className="absolute inset-0 bg-black/5 flex-1 justify-center items-center z-50">
+      <View className="bg-white rounded-2xl p-4 mx-8 items-center shadow-lg">
         <ActivityIndicator size="large" color="#0286FF" />
       </View>
     </View>
