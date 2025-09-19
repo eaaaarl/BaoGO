@@ -39,7 +39,7 @@ export default function ChatRoom() {
   const router = useRouter()
   const [message, setMessage] = useState('')
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
-  const [rideStatus, setRideStatus] = useState('pending') // pending, started, completed, cancelled
+  const [rideStatus, setRideStatus] = useState('pending')
   const inset = useSafeAreaInsets()
   const flatListRef = useRef<FlatList>(null)
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
@@ -60,6 +60,8 @@ export default function ChatRoom() {
     return [...base, ...optimisticMessages]
   }, [messages, optimisticMessages])
 
+  console.log('allmessages', JSON.stringify(allMessages, null, 2))
+
   useEffect(() => {
     if (allMessages && allMessages.length > 0) {
       setTimeout(() => {
@@ -70,12 +72,14 @@ export default function ChatRoom() {
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+    return date.toLocaleTimeString("en-PH", {
+      timeZone: "Asia/Manila",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     })
   }
+
 
   const generateOptimisticId = () => `optimistic-${Date.now()}-${Math.random()}`
 
