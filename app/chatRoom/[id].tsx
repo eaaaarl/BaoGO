@@ -161,6 +161,7 @@ export default function ChatRoom() {
     }
   }
 
+
   const handleRideAction = async (action: 'start' | 'cancel' | 'complete') => {
     const actionMessages = {
       start: 'Ride has been started 🚗',
@@ -177,11 +178,9 @@ export default function ChatRoom() {
           text: 'Confirm',
           onPress: async () => {
             try {
-              // Update ride status locally first
               const newStatus = action === 'start' ? 'started' : action === 'cancel' ? 'cancelled' : 'completed'
               setRideStatus(newStatus)
 
-              // Send system message
               const systemMessage: Message = {
                 id: generateOptimisticId(),
                 chat_room_id: id as string,
@@ -198,6 +197,8 @@ export default function ChatRoom() {
               }
 
               setOptimisticMessages(prev => [...prev, systemMessage])
+
+
 
               // Here you would make the actual API call to update ride status
               // await updateRideStatus({ rideId: id, status: newStatus })

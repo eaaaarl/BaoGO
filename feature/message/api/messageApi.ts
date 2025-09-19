@@ -26,6 +26,7 @@ export const messageApi = createApi({
               ],
               { onConflict: "driver_id,rider_id" }
             )
+            .select()
             .single();
 
           if (error) {
@@ -35,10 +36,10 @@ export const messageApi = createApi({
           }
 
           return {
-            data: {
-              data,
+            data,
+            meta: {
               success: true,
-              message: "Chat room created.",
+              message: `Chat rooms created Id: ${data}`,
             },
           };
         } catch (error) {

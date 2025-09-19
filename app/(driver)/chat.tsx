@@ -2,16 +2,22 @@ import { images } from '@/constant/image'
 import { useGetDriverChatRoomsQuery } from '@/feature/driver/api/driverApi'
 import { useAppSelector } from '@/libs/redux/hooks'
 import { router } from 'expo-router'
-import React from 'react'
-import { ActivityIndicator, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View } from 'react-native'
+import React, { useState } from 'react'
+import { ActivityIndicator, FlatList, Image, RefreshControl, SafeAreaView, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function Chat() {
   const { user } = useAppSelector((state) => state.auth)
-  const { data: driverChatRooms, isLoading: driverChatRoomsLoading } = useGetDriverChatRoomsQuery({ driverId: user?.id! })
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
+  const { data: driverChatRooms, isLoading: driverChatRoomsLoading, refetch } = useGetDriverChatRoomsQuery({ driverId: user?.id! })
   const inset = useSafeAreaInsets()
 
-  console.log(JSON.stringify(driverChatRooms, null, 2))
+  const handlRefresh = async () => {
+    setIsRefreshing(true)
+    await refetch()
+    setIsRefreshing(false)
+
+  }
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -59,6 +65,12 @@ export default function Chat() {
 
       <FlatList
         data={driverChatRooms}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handlRefresh}
+          />
+        }
         renderItem={({ item }) => {
           const latestMessage = getLatestMessage(item.latest_message)
           return (
