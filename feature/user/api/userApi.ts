@@ -116,6 +116,10 @@ export const userApi = createApi({
         riderId,
         status,
         driverId,
+        destinationLatitude,
+        destinationLongitude,
+        pickupLatitude,
+        pickupLongitude,
       }) => {
         try {
           const { data: existingRequest } = await supabase
@@ -142,15 +146,16 @@ export const userApi = createApi({
                 driver_id: driverId,
                 pickup: pickupLocation,
                 destination: destinationLocation,
+                pickup_latitude: pickupLatitude,
+                pickup_longitude: pickupLongitude,
+                destination_latitude: destinationLatitude,
+                destination_longitude: destinationLongitude,
                 status: status,
               },
             ])
             .select()
             .single();
           if (error) throw error;
-
-          console.log("error", error);
-          console.log("user:api:post", data);
           return { data };
         } catch (error) {
           return {

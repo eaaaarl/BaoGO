@@ -1,6 +1,7 @@
 import { authApi } from "@/feature/auth/api/authApi";
 import { driverApi } from "@/feature/driver/api/driverApi";
 import { messageApi } from "@/feature/message/api/messageApi";
+import { rideApi } from "@/feature/ride/api/rideApi";
 import { userApi } from "@/feature/user/api/userApi";
 import { authReducer } from "@/libs/redux/state/authSlice";
 import { driverReducers } from "@/libs/redux/state/driverSlice";
@@ -22,9 +23,10 @@ const rootReducer = combineReducers({
   [driverApi.reducerPath]: driverApi.reducer,
   [userApi.reducerPath]: userApi.reducer,
   [messageApi.reducerPath]: messageApi.reducer,
+  [rideApi.reducerPath]: rideApi.reducer,
 });
 
-export const apis = [authApi, driverApi, userApi, messageApi];
+export const apis = [authApi, driverApi, userApi, messageApi, rideApi];
 
 export const apisReducerPath = apis.map((api) => api.reducerPath);
 

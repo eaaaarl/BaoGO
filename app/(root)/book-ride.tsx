@@ -2,14 +2,13 @@ import CustomButton from '@/components/CustomButton'
 import RideLayout from '@/components/RideLayout'
 import { icons } from '@/constant/image'
 import { useGetAvailableDriversQuery, useRequestRideMutation } from '@/feature/user/api/userApi'
-import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks'
+import { useAppSelector } from '@/libs/redux/hooks'
 import { router } from 'expo-router'
 import React from 'react'
-import { Alert, Image, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Text, View } from 'react-native'
 
 export default function BookRide() {
-  const dispatch = useAppDispatch()
-  const { userAddress, destinationAddress } = useAppSelector((state) => state.location)
+  const { userAddress, destinationAddress, destinationLatitude, destinationLongitude, userLatitude, userLongitude } = useAppSelector((state) => state.location)
   const { selectedDriver } = useAppSelector((state) => state.driver)
   const { data } = useGetAvailableDriversQuery()
   const { user } = useAppSelector((state) => state.auth)
@@ -39,32 +38,36 @@ export default function BookRide() {
     if (!driverDetails) return;
 
     try {
+      
       const res = await request({
-        riderId: user?.id!,
-        driverId: rawDriverDetails?.id!,
-        pickupLocation: userAddress!,
-        destinationLocation: destinationAddress!,
-        status: 'Pending'
-      })
-      if (res.error) {
-        Alert.alert(
-          "Ride Request Exists",
-          "Looks like you already have a ride request in progress. Would you like to check its status?",
-          [
-            {
-              text: "Check Status",
-              onPress: () => router.replace('/(tabs)/ride')
-            },
-            {
-              text: "Cancel",
-              style: "cancel"
-            }
-          ]
-        )
-      } else {
-        router.replace('/(tabs)/ride')
-
-      }
+         riderId: user?.id!,
+         driverId: rawDriverDetails?.id!,
+         pickupLocation: userAddress!,
+         destinationLocation: destinationAddress!,
+         destinationLatitude: destinationLatitude!,
+         destinationLongitude:destinationLongitude!,
+         pickupLatitude:userLatitude!,
+         pickupLongitude:userLongitude!,
+         status: 'Pending'
+       })
+       if (res.error) {
+         Alert.alert(
+           "Ride Request Exists",
+           "Looks like you already have a ride request in progress. Would you like to check its status?",
+           [
+             {
+               text: "Check Status",
+               onPress: () => router.replace('/(tabs)/ride')
+             },
+             {
+               text: "Cancel",
+               style: "cancel"
+             }
+           ]
+         )
+       } else {
+         router.replace('/(tabs)/ride')
+       } 
     } catch (error) {
       console.error('Unexpected error in handleConfirmRide:', error);
     }
@@ -152,7 +155,20 @@ export default function BookRide() {
           onPress={handleConfirmRide}
           disabled={requestLoading}
         />
+
+
+        {requestLoading && <LoadingOverlay />}
       </>
     </RideLayout>
+  )
+}
+
+function LoadingOverlay() {
+  return (
+    <View className="absolute inset-0 bg-black/5 flex-1 justify-center items-center z-50">
+      <View className="bg-white rounded-2xl p-4 mx-8 items-center shadow-lg">
+        <ActivityIndicator size="large" color="#0286FF" />
+      </View>
+    </View>
   )
 }

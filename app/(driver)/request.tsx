@@ -1,9 +1,7 @@
 import { images } from '@/constant/image';
-import { useAcceptRiderRequestRideMutation, useDeclineRiderRequestRideMutation, useGetRiderRequestRideQuery } from '@/feature/driver/api/driverApi';
+import { useDeclineRiderRequestRideMutation, useGetRiderRequestRideQuery } from '@/feature/driver/api/driverApi';
 import { Ride } from '@/feature/driver/api/interface';
-import { useCreateChatRoomMutation } from '@/feature/message/api/messageApi';
 import { useAppSelector } from '@/libs/redux/hooks';
-import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -26,9 +24,9 @@ export default function Request() {
   });
 
   const [declineRiderRequest, { isLoading: declineRiderRequestLoading }] = useDeclineRiderRequestRideMutation()
-  const [acceptRiderRequest, { isLoading: acceptRiderRequestLoading }] = useAcceptRiderRequestRideMutation()
-  const [createChatRoom, { isLoading: createChatRoomLoading }] = useCreateChatRoomMutation()
-
+  /*  const [acceptRiderRequest, { isLoading: acceptRiderRequestLoading }] = useAcceptRiderRequestRideMutation()
+   const [createChatRoom, { isLoading: createChatRoomLoading }] = useCreateChatRoomMutation()
+   const [createRides, { isLoading: createRidesLoading }] = useCreateRidesMutation() */
 
   const handleAccept = (ride: Ride) => {
     Alert.alert(
@@ -46,30 +44,38 @@ export default function Request() {
 
   const confirmAccept = async (ride: Ride) => {
     try {
-      const result = await acceptRiderRequest({
-        requestId: ride.id,
-        driverId: currentUserId as string
-      }).unwrap();
+      console.log('Rides Payload', JSON.stringify(ride, null, 2))
 
 
-
-      if (result.error) {
-        console.error("Accept error:", result.error);
-        Alert.alert(
-          "Error",
-          result.error.message || "Failed to accept ride request"
-        );
-      } else if (result?.success) {
-
-        await createChatRoom({
-          driverId: currentUserId as string,
-          riderId: ride.rider_id,
+      /*   const result = await acceptRiderRequest({
+          requestId: ride.id,
+          driverId: currentUserId as string
+        }).unwrap();
+  
+  
+        await createRides({
+          chat_room_id: result.id,
+          destination_latitude: ride.
         })
-
-        router.push({
-          pathname: '/(driver)/chat'
-        })
-      }
+  
+  
+        if (result.error) {
+          console.error("Accept error:", result.error);
+          Alert.alert(
+            "Error",
+            result.error.message || "Failed to accept ride request"
+          );
+        } else if (result?.success) {
+  
+          await createChatRoom({
+            driverId: currentUserId as string,
+            riderId: ride.rider_id,
+          })
+  
+          router.push({
+            pathname: '/(driver)/chat'
+          })
+        } */
     } catch (error) {
       console.error("Error in confirmAccept:", error);
     }
@@ -116,8 +122,6 @@ export default function Request() {
     await refetch();
     setRefreshing(false);
   };
-
-
 
   const RequestCard = ({ ride }: { ride: Ride }) => (
     <View className="bg-white rounded-2xl p-4 my-2 shadow-sm border border-gray-100">

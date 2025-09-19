@@ -19,6 +19,10 @@ export interface RequestRidePayload {
   driverId: string;
   pickupLocation: string;
   destinationLocation: string;
+  pickupLatitude: number;
+  pickupLongitude: number;
+  destinationLatitude: number;
+  destinationLongitude: number;
   status: "Pending" | "Cancel" | "Complete";
 }
 
