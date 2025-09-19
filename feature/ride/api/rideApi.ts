@@ -18,6 +18,7 @@ export const rideApi = createApi({
         pickup_longitude,
         rider_id,
         status,
+        accepted_at,
       }) => {
         const { data, error } = await supabase.from("rides").insert([
           {
@@ -31,6 +32,7 @@ export const rideApi = createApi({
             pickup_longitude,
             rider_id,
             status,
+            accepted_at,
           },
         ]);
 

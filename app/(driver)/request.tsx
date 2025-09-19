@@ -79,7 +79,8 @@ export default function Request() {
           pickup_location: ride.pickup,
           pickup_longitude: ride.pickup_longitude,
           rider_id: ride.rider_id,
-          status: 'accepted'
+          status: 'accepted',
+          accepted_at: new Date()
         }).unwrap()
 
         router.push({
