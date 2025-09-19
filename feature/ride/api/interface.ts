@@ -9,4 +9,9 @@ export interface CreateRidePayload {
   destination_latitude: number;
   destination_longitude: number;
   status: "pending" | "accepted" | "started" | "completed" | "cancelled";
+  accepted_at?: Date;
+  started_at?: Date;
+  completed_at?: Date;
+  cancelled_at?: Date;
+  notes?: string;
 }

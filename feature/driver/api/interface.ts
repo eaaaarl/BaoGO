@@ -29,6 +29,10 @@ export interface Ride {
   rider_id: string;
   pickup: string;
   destination: string;
+  pickup_latitude: number;
+  pickup_longitude: number;
+  destination_latitude: number;
+  destination_longitude: number;
   created_at: string;
   id: string;
   status: string;
