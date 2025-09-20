@@ -1,10 +1,15 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CreateRidePayload, StartRidePayload } from "./interface";
+import {
+  CompleteRidePayload,
+  CreateRidePayload,
+  StartRidePayload,
+} from "./interface";
 
 export const rideApi = createApi({
   reducerPath: "rideApi",
   baseQuery: fakeBaseQuery(),
+  tagTypes: ["getStatusRide"],
   endpoints: (builder) => ({
     createRides: builder.mutation<any, CreateRidePayload>({
       queryFn: async ({
@@ -96,6 +101,7 @@ export const rideApi = createApi({
           };
         }
       },
+      invalidatesTags: ["getStatusRide"],
     }),
 
     getStatusRide: builder.query<
@@ -136,6 +142,47 @@ export const rideApi = createApi({
           };
         }
       },
+      providesTags: ["getStatusRide"],
+    }),
+
+    finishRide: builder.mutation<any, CompleteRidePayload>({
+      queryFn: async ({ chat_room_id, driver_id, completed_at, status }) => {
+        try {
+          const { data, error } = await supabase
+            .from("rides")
+            .update({
+              status,
+              completed_at,
+            })
+            .eq("driver_id", driver_id)
+            .eq("chat_room_id", chat_room_id)
+            .select()
+            .single();
+
+          if (error) {
+            return {
+              error: {
+                message: error.message,
+              },
+            };
+          }
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Ride completed.",
+            },
+          };
+        } catch (error) {
+          console.error("Error at start ride", error);
+          return {
+            data: {
+              message: "Internal Server Error",
+            },
+          };
+        }
+      },
+      invalidatesTags: ["getStatusRide"],
     }),
   }),
 });
@@ -144,4 +191,5 @@ export const {
   useCreateRidesMutation,
   useStartRideMutation,
   useGetStatusRideQuery,
+  useFinishRideMutation,
 } = rideApi;

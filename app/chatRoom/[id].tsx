@@ -1,5 +1,5 @@
 import { useGetChatMessagesQuery, useGetChatRoomByIdQuery, useSendMessageMutation } from '@/feature/message/api/messageApi'
-import { useGetStatusRideQuery, useStartRideMutation } from '@/feature/ride/api/rideApi'
+import { useFinishRideMutation, useGetStatusRideQuery, useStartRideMutation } from '@/feature/ride/api/rideApi'
 import { useAppSelector } from '@/libs/redux/hooks'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -50,13 +50,9 @@ export default function ChatRoom() {
     driver_id: chatRoom?.driver_id as string,
     rider_id: chatRoom?.rider_id as string
   })
-
-
-  const [startRide, { isLoading: startRideLoading }] = useStartRideMutation()
-
+  const [startRide] = useStartRideMutation()
+  const [finishRide] = useFinishRideMutation()
   const otherUser = currentUserId === chatRoom?.driver_id ? chatRoom?.rider : chatRoom?.driver.profile || chatRoom?.driver
-
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (messages && messages.length > 0) {
       setTimeout(() => {
@@ -79,9 +75,8 @@ export default function ChatRoom() {
     if (message.trim().length === 0 || sendingMessage) return
 
     const messageText = message.trim()
-    setMessage('') // Clear input immediately
+    setMessage('')
 
-    // Scroll to end immediately for better UX
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true })
     }, 100)
@@ -89,7 +84,6 @@ export default function ChatRoom() {
     try {
       const senderType = currentUserId === driverId ? 'driver' : 'rider'
 
-      // RTK Query will handle optimistic updates automatically
       await sendMessage({
         chatRoomId: id as string,
         message: messageText,
@@ -144,12 +138,21 @@ export default function ChatRoom() {
                 senderType: 'system'
               }).unwrap()
 
-              await startRide({
-                chat_room_id: id as string,
-                driver_id: chatRoom?.driver_id as string,
-                started_at: new Date(),
-                status: 'started'
-              })
+              if (action === 'complete') {
+                await finishRide({
+                  chat_room_id: id as string,
+                  driver_id: chatRoom?.driver_id as string,
+                  completed_at: new Date(),
+                  status: 'completed'
+                })
+              } else if (action === 'start') {
+                await startRide({
+                  chat_room_id: id as string,
+                  driver_id: chatRoom?.driver_id as string,
+                  started_at: new Date(),
+                  status: 'started'
+                })
+              }
 
             } catch (error) {
               console.error(`Error ${action}ing ride:`, error)

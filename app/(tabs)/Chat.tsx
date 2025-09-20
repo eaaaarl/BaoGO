@@ -76,7 +76,7 @@ export default function Chat() {
               {driverName}
             </Text>
             {lastMessage && (
-              <Text className="text-xs text-gray-500">
+              <Text className="text-xs text-gray-500 font-normal">
                 {formatTime(lastMessage.sent_at)}
               </Text>
             )}
@@ -106,7 +106,7 @@ export default function Chat() {
                 )}
               </Text>
 
-              {lastMessage?.sender_type === 'rider' && (
+              {lastMessage?.sender_type === 'driver' && (
                 <View className='w-2 h-2 rounded-full bg-blue-500 ml-2' />
               )}
             </View>
