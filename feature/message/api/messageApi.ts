@@ -1,3 +1,4 @@
+import { driverApi } from "@/feature/driver/api/driverApi";
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
@@ -339,10 +340,10 @@ export const messageApi = createApi({
         );
 
         try {
-          // Wait for the actual mutation to complete
           const result = await queryFulfilled;
 
-          // Update the cache with the real message, replacing the optimistic one
+          dispatch(driverApi.util.invalidateTags(["DriverChatRooms"]));
+
           dispatch(
             messageApi.util.updateQueryData(
               "getChatMessages",
@@ -360,7 +361,6 @@ export const messageApi = createApi({
             )
           );
         } catch (error) {
-          // If the mutation fails, revert the optimistic update
           patchResult.undo();
           console.error("Send message failed:", error);
         }
@@ -370,6 +370,7 @@ export const messageApi = createApi({
           type: "getMessages",
           id: arg.chatRoomId,
         },
+        "getChatRoom",
         "getChatRoom",
       ],
     }),

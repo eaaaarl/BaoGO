@@ -101,7 +101,7 @@ export default function ChatRoom() {
           {
             text: 'Retry',
             onPress: () => {
-              setMessage(messageText) // Restore message to input
+              setMessage(messageText)
             }
           },
           {
@@ -214,8 +214,6 @@ export default function ChatRoom() {
     const isCurrentUser = item.sender_id === currentUserId
     const isSystemMessage = item.sender_type === 'system'
     const isOptimistic = item.id.startsWith('optimistic-')
-
-    console.log(isOptimistic)
 
     if (isSystemMessage) {
       return (
