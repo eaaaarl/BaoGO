@@ -1,10 +1,16 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CreateRidePayload, StartRidePayload } from "./interface";
+import {
+  CancelRidePayload,
+  CompleteRidePayload,
+  CreateRidePayload,
+  StartRidePayload,
+} from "./interface";
 
 export const rideApi = createApi({
   reducerPath: "rideApi",
   baseQuery: fakeBaseQuery(),
+  tagTypes: ["getStatusRide"],
   endpoints: (builder) => ({
     createRides: builder.mutation<any, CreateRidePayload>({
       queryFn: async ({
@@ -38,7 +44,7 @@ export const rideApi = createApi({
 
         if (error) {
           return {
-            data: {
+            error: {
               message: error.message,
             },
           };
@@ -52,11 +58,7 @@ export const rideApi = createApi({
           },
         };
       },
-
-      onQueryStarted: (arg, api) => {
-        console.log("args", arg);
-        console.log("api", api);
-      },
+      invalidatesTags: ["getStatusRide"],
     }),
 
     startRide: builder.mutation<any, StartRidePayload>({
@@ -90,12 +92,37 @@ export const rideApi = createApi({
         } catch (error) {
           console.error("Error at start ride", error);
           return {
-            data: {
+            error: {
               message: "Internal Server Error",
             },
           };
         }
       },
+      // Optimistic update for start ride
+      onQueryStarted: async (
+        { chat_room_id, driver_id, status },
+        { dispatch, queryFulfilled }
+      ) => {
+        const patchResult = dispatch(
+          rideApi.util.updateQueryData(
+            "getStatusRide",
+            { chat_room_id, driver_id, rider_id: "" },
+            (draft) => {
+              if (draft) {
+                draft.status = status;
+              }
+            }
+          )
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // Revert the optimistic update if the request failed
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["getStatusRide"],
     }),
 
     getStatusRide: builder.query<
@@ -106,7 +133,9 @@ export const rideApi = createApi({
         try {
           const { data, error } = await supabase
             .from("rides")
-            .select("status")
+            .select(
+              "status, started_at, completed_at, cancelled_at, accepted_at"
+            )
             .eq("chat_room_id", chat_room_id)
             .eq("driver_id", driver_id)
             .eq("rider_id", rider_id)
@@ -136,6 +165,135 @@ export const rideApi = createApi({
           };
         }
       },
+      providesTags: ["getStatusRide"],
+    }),
+
+    finishRide: builder.mutation<any, CompleteRidePayload>({
+      queryFn: async ({ chat_room_id, driver_id, completed_at, status }) => {
+        try {
+          const { data, error } = await supabase
+            .from("rides")
+            .update({
+              status,
+              completed_at,
+            })
+            .eq("driver_id", driver_id)
+            .eq("chat_room_id", chat_room_id)
+            .select()
+            .single();
+
+          if (error) {
+            return {
+              error: {
+                message: error.message,
+              },
+            };
+          }
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Ride completed.",
+            },
+          };
+        } catch (error) {
+          console.error("Error at finish ride", error);
+          return {
+            error: {
+              message: "Internal Server Error",
+            },
+          };
+        }
+      },
+      // Optimistic update for finish ride
+      onQueryStarted: async (
+        { chat_room_id, driver_id, status },
+        { dispatch, queryFulfilled }
+      ) => {
+        const patchResult = dispatch(
+          rideApi.util.updateQueryData(
+            "getStatusRide",
+            { chat_room_id, driver_id, rider_id: "" },
+            (draft) => {
+              if (draft) {
+                draft.status = status;
+              }
+            }
+          )
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // Revert the optimistic update if the request failed
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["getStatusRide"],
+    }),
+
+    cancelRide: builder.mutation<any, CancelRidePayload>({
+      queryFn: async ({ chat_room_id, driver_id, cancelled_at, status }) => {
+        try {
+          const { data, error } = await supabase
+            .from("rides")
+            .update({
+              status,
+              cancelled_at,
+            })
+            .eq("driver_id", driver_id)
+            .eq("chat_room_id", chat_room_id)
+            .select()
+            .single();
+
+          if (error) {
+            return {
+              error: {
+                message: error.message,
+              },
+            };
+          }
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Ride cancelled.",
+            },
+          };
+        } catch (error) {
+          console.error("Error at cancel ride", error);
+          return {
+            error: {
+              message: "Internal Server Error",
+            },
+          };
+        }
+      },
+      // Optimistic update for cancel ride
+      onQueryStarted: async (
+        { chat_room_id, driver_id, status },
+        { dispatch, queryFulfilled }
+      ) => {
+        const patchResult = dispatch(
+          rideApi.util.updateQueryData(
+            "getStatusRide",
+            { chat_room_id, driver_id, rider_id: "" },
+            (draft) => {
+              if (draft) {
+                draft.status = status;
+              }
+            }
+          )
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // Revert the optimistic update if the request failed
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["getStatusRide"],
     }),
   }),
 });
@@ -144,4 +302,6 @@ export const {
   useCreateRidesMutation,
   useStartRideMutation,
   useGetStatusRideQuery,
+  useFinishRideMutation,
+  useCancelRideMutation,
 } = rideApi;
