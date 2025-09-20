@@ -1,55 +1,43 @@
 import { images } from '@/constant/image'
 import { ChatRoom } from '@/feature/message/api/inteface'
 import { useGetChatRoomQuery } from '@/feature/message/api/messageApi'
-import { useAppDispatch, useAppSelector } from '@/libs/redux/hooks'
-import { setDriverInfo } from '@/libs/redux/state/rideSlice'
+import { useAppSelector } from '@/libs/redux/hooks'
 import { router } from 'expo-router'
-import React from 'react'
-import { ActivityIndicator, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View } from 'react-native'
+import React, { useState } from 'react'
+import { ActivityIndicator, FlatList, Image, RefreshControl, SafeAreaView, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 
 export default function Chat() {
   const { user } = useAppSelector((state) => state.auth)
-  const { data: chatRooms, isLoading: getChatRoomsLoading } = useGetChatRoomQuery({
+  const { data: chatRooms, isLoading: getChatRoomsLoading, refetch: chatRoomsRefetch } = useGetChatRoomQuery({
     rider_id: user?.id as string
   })
 
-  const dispatch = useAppDispatch()
+  console.log('chatRooms', JSON.stringify(chatRooms, null, 2))
 
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const inset = useSafeAreaInsets()
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp)
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await chatRoomsRefetch()
+    setIsRefreshing(false)
+  }
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
     const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60)
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      })
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-      })
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
     }
   }
 
   const handleChatPress = (chatRoom: ChatRoom) => {
-    dispatch(setDriverInfo({
-      full_name: chatRoom.driver.profile.full_name,
-      avatar_url: chatRoom.driver.profile.avatar_url!,
-      id: chatRoom.driver_id,
-      vehicle: {
-        color: chatRoom.driver.vehicle_color,
-        license_number: chatRoom.driver.license_number,
-        type: chatRoom.driver.vehicle_type,
-        year: String(chatRoom.driver.vehicle_year)
-      }
-    }))
     router.push({
       pathname: '/chatRoom/[id]',
       params: {
@@ -58,14 +46,18 @@ export default function Chat() {
     })
   }
 
+
+
   const renderChatItem = ({ item }: { item: ChatRoom }) => {
 
     const driver = item.driver
-    const lastMessage = item.latest_message && item.latest_message.length > 0 ? item.latest_message[0] : null
+    const lastMessage = item.latest_message && item.latest_message.length > 0 ? item.latest_message[item.latest_message.length - 1] : null
 
+    console.log('item', JSON.stringify(item, null, 2))
 
     const driverName = driver.profile.full_name
     const driverInitial = driverName.charAt(0).toUpperCase()
+
 
     return (
       <TouchableOpacity
@@ -91,21 +83,32 @@ export default function Chat() {
           </View>
 
           <View className="flex-row justify-between items-center">
-            <View className="flex-1">
+            <View className='flex-row justify-between items-center'>
               <Text
-                className="text-sm text-gray-600 font-medium"
+                className='text-sm text-gray-600 font-medium flex-1'
                 numberOfLines={1}
-                ellipsizeMode="tail"
               >
                 {lastMessage ? (
                   <>
-                    {lastMessage.sender_type === 'system' ? '📢 ' : ''}
+                    {lastMessage.sender_type === 'system' && (
+                      <Text className='text-blue-600 font-semibold'>System: </Text>
+                    )}
+                    {lastMessage.sender_type === 'driver' && (
+                      <Text className='text-gray-800 font-semibold'>Rider: </Text>
+                    )}
+                    {lastMessage.sender_type === 'rider' && (
+                      <Text className='text-green-600 font-semibold'>You: </Text>
+                    )}
                     {lastMessage.message}
                   </>
                 ) : (
                   'No messages yet'
                 )}
               </Text>
+
+              {lastMessage?.sender_type === 'rider' && (
+                <View className='w-2 h-2 rounded-full bg-blue-500 ml-2' />
+              )}
             </View>
           </View>
         </View>
@@ -149,12 +152,19 @@ export default function Chat() {
 
       <FlatList
         data={chatRooms}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+          />
+        }
         renderItem={renderChatItem}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1 }}
         ListEmptyComponent={renderEmptyState}
       />
+
     </SafeAreaView>
   )
 }

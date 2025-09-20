@@ -1,6 +1,6 @@
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CreateRidePayload } from "./interface";
+import { CreateRidePayload, StartRidePayload } from "./interface";
 
 export const rideApi = createApi({
   reducerPath: "rideApi",
@@ -58,7 +58,90 @@ export const rideApi = createApi({
         console.log("api", api);
       },
     }),
+
+    startRide: builder.mutation<any, StartRidePayload>({
+      queryFn: async ({ chat_room_id, driver_id, started_at, status }) => {
+        try {
+          const { data, error } = await supabase
+            .from("rides")
+            .update({
+              status,
+              started_at,
+            })
+            .eq("driver_id", driver_id)
+            .eq("chat_room_id", chat_room_id)
+            .select()
+            .single();
+
+          if (error) {
+            return {
+              error: {
+                message: error.message,
+              },
+            };
+          }
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Ride started.",
+            },
+          };
+        } catch (error) {
+          console.error("Error at start ride", error);
+          return {
+            data: {
+              message: "Internal Server Error",
+            },
+          };
+        }
+      },
+    }),
+
+    getStatusRide: builder.query<
+      any,
+      { chat_room_id: string; driver_id: string; rider_id: string }
+    >({
+      queryFn: async ({ chat_room_id, driver_id, rider_id }) => {
+        try {
+          const { data, error } = await supabase
+            .from("rides")
+            .select("status")
+            .eq("chat_room_id", chat_room_id)
+            .eq("driver_id", driver_id)
+            .eq("rider_id", rider_id)
+            .single();
+
+          if (error) {
+            return {
+              error: {
+                message: error.message,
+              },
+            };
+          }
+
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Ride status fetched",
+            },
+          };
+        } catch (error) {
+          console.error("Error at getStatusRide", error);
+          return {
+            error: {
+              message: "Error at getStatusRide",
+            },
+          };
+        }
+      },
+    }),
   }),
 });
 
-export const { useCreateRidesMutation } = rideApi;
+export const {
+  useCreateRidesMutation,
+  useStartRideMutation,
+  useGetStatusRideQuery,
+} = rideApi;
