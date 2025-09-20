@@ -1,5 +1,5 @@
 import { useGetChatMessagesQuery, useGetChatRoomByIdQuery, useSendMessageMutation } from '@/feature/message/api/messageApi'
-import { useFinishRideMutation, useGetStatusRideQuery, useStartRideMutation } from '@/feature/ride/api/rideApi'
+import { useCancelRideMutation, useFinishRideMutation, useGetStatusRideQuery, useStartRideMutation } from '@/feature/ride/api/rideApi'
 import { useAppSelector } from '@/libs/redux/hooks'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -40,19 +40,31 @@ export default function ChatRoom() {
   const flatListRef = useRef<FlatList>(null)
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
 
+  // Optimistic state for ride status
+  const [optimisticRideStatus, setOptimisticRideStatus] = useState<string | null>(null)
+  const [isRideActionLoading, setIsRideActionLoading] = useState(false)
+
   const { data: messages, isLoading: messagesLoading } = useGetChatMessagesQuery({
     chatRoomId: id as string
   })
   const { data: chatRoom } = useGetChatRoomByIdQuery({ chatRoomId: id as string })
   const [sendMessage, { isLoading: sendingMessage }] = useSendMessageMutation()
-  const { data: rideStatus } = useGetStatusRideQuery({
+  const { data: rideStatus, refetch: refetchRideStatus } = useGetStatusRideQuery({
     chat_room_id: id as string,
     driver_id: chatRoom?.driver_id as string,
     rider_id: chatRoom?.rider_id as string
   })
+
+  console.log('ride status', rideStatus)
+
   const [startRide] = useStartRideMutation()
   const [finishRide] = useFinishRideMutation()
+  const [cancelRide] = useCancelRideMutation()
   const otherUser = currentUserId === chatRoom?.driver_id ? chatRoom?.rider : chatRoom?.driver.profile || chatRoom?.driver
+
+  // Get the current status (optimistic or actual)
+  const currentRideStatus = optimisticRideStatus || rideStatus?.status
+
   useEffect(() => {
     if (messages && messages.length > 0) {
       setTimeout(() => {
@@ -60,6 +72,14 @@ export default function ChatRoom() {
       }, 100)
     }
   }, [messages])
+
+  // Reset optimistic state when actual status changes
+  useEffect(() => {
+    if (rideStatus?.status && optimisticRideStatus && rideStatus.status === optimisticRideStatus) {
+      setOptimisticRideStatus(null)
+      setIsRideActionLoading(false)
+    }
+  }, [rideStatus?.status, optimisticRideStatus])
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -122,6 +142,12 @@ export default function ChatRoom() {
       complete: 'Ride has been completed ✅'
     }
 
+    const statusMap = {
+      start: 'started',
+      cancel: 'cancelled',
+      complete: 'completed'
+    }
+
     Alert.alert(
       `${action.charAt(0).toUpperCase() + action.slice(1)} Ride`,
       `Are you sure you want to ${action} this ride?`,
@@ -131,31 +157,51 @@ export default function ChatRoom() {
           text: 'Confirm',
           onPress: async () => {
             try {
+              // Set optimistic state immediately
+              setOptimisticRideStatus(statusMap[action])
+              setIsRideActionLoading(true)
 
+              // Send system message first
               await sendMessage({
                 chatRoomId: id as string,
                 message: actionMessages[action],
                 senderType: 'system'
               }).unwrap()
 
+              // Perform the actual API call
               if (action === 'complete') {
                 await finishRide({
                   chat_room_id: id as string,
                   driver_id: chatRoom?.driver_id as string,
                   completed_at: new Date(),
                   status: 'completed'
-                })
+                }).unwrap()
               } else if (action === 'start') {
                 await startRide({
                   chat_room_id: id as string,
                   driver_id: chatRoom?.driver_id as string,
                   started_at: new Date(),
                   status: 'started'
-                })
+                }).unwrap()
+              } else if (action === 'cancel') {
+                await cancelRide({
+                  chat_room_id: id as string,
+                  driver_id: chatRoom?.driver_id as string,
+                  cancelled_at: new Date(),
+                  status: 'cancelled'
+                }).unwrap()
               }
+
+              // Refetch to ensure we have the latest data
+              await refetchRideStatus()
 
             } catch (error) {
               console.error(`Error ${action}ing ride:`, error)
+
+              // Revert optimistic state on error
+              setOptimisticRideStatus(null)
+              setIsRideActionLoading(false)
+
               Alert.alert('Error', `Failed to ${action} ride. Please try again.`)
             }
           }
@@ -168,26 +214,38 @@ export default function ChatRoom() {
     const isDriver = currentUserId === chatRoom?.driver_id
     if (!isDriver) return null
 
-    const status = rideStatus?.status;
+    const status = currentRideStatus // Use optimistic status
 
     return (
       <View className="px-4 py-3">
         <View className="flex-row gap-3">
-          {status === 'pending' && (
+          {status === 'accepted' && (
             <>
               <TouchableOpacity
                 onPress={() => handleRideAction('start')}
-                className="flex-1 bg-green-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
+                disabled={isRideActionLoading}
+                className={`flex-1 rounded-xl py-3 px-4 flex-row items-center justify-center ${isRideActionLoading ? 'bg-green-300' : 'bg-green-500'
+                  }`}
               >
-                <Ionicons name="play-circle" size={20} color="white" />
+                {isRideActionLoading && optimisticRideStatus === 'started' ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Ionicons name="play-circle" size={20} color="white" />
+                )}
                 <Text className="text-white font-semibold ml-2">Start Ride</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => handleRideAction('cancel')}
-                className="flex-1 bg-red-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
+                disabled={isRideActionLoading}
+                className={`flex-1 rounded-xl py-3 px-4 flex-row items-center justify-center ${isRideActionLoading ? 'bg-red-300' : 'bg-red-500'
+                  }`}
               >
-                <Ionicons name="close-circle" size={20} color="white" />
+                {isRideActionLoading && optimisticRideStatus === 'cancelled' ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Ionicons name="close-circle" size={20} color="white" />
+                )}
                 <Text className="text-white font-semibold ml-2">Cancel Ride</Text>
               </TouchableOpacity>
             </>
@@ -196,20 +254,30 @@ export default function ChatRoom() {
           {status === 'started' && (
             <TouchableOpacity
               onPress={() => handleRideAction('complete')}
-              className="flex-1 bg-blue-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
+              disabled={isRideActionLoading}
+              className={`flex-1 rounded-xl py-3 px-4 flex-row items-center justify-center ${isRideActionLoading ? 'bg-blue-300' : 'bg-blue-500'
+                }`}
             >
-              <Ionicons name="checkmark-circle" size={20} color="white" />
+              {isRideActionLoading && optimisticRideStatus === 'completed' ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Ionicons name="checkmark-circle" size={20} color="white" />
+              )}
               <Text className="text-white font-semibold ml-2">Complete Ride</Text>
             </TouchableOpacity>
           )}
 
           {(status === 'cancelled' || status === 'completed') && (
             <View className="flex-1 bg-gray-300 rounded-xl py-3 px-4 flex-row items-center justify-center">
-              <Ionicons
-                name={status === 'completed' ? "checkmark-circle" : "close-circle"}
-                size={20}
-                color="#666"
-              />
+              {isRideActionLoading ? (
+                <ActivityIndicator size="small" color="#666" />
+              ) : (
+                <Ionicons
+                  name={status === 'completed' ? "checkmark-circle" : "close-circle"}
+                  size={20}
+                  color="#666"
+                />
+              )}
               <Text className="text-gray-600 font-semibold ml-2 capitalize">
                 Ride {status}
               </Text>
@@ -343,9 +411,10 @@ export default function ChatRoom() {
           <Text className="font-bold text-lg">
             {otherUser?.full_name}
           </Text>
-          {/* <Text className="text-xs text-gray-500 capitalize">
-            Ride Status: {rideStatus}
-          </Text> */}
+          {/* Show current ride status in header if needed */}
+          <Text className="text-xs text-gray-500 capitalize">
+            Ride Status: {currentRideStatus || 'Loading...'}
+          </Text>
         </View>
       </View>
 

@@ -29,3 +29,10 @@ export interface CompleteRidePayload {
   status: "pending" | "accepted" | "started" | "completed" | "cancelled";
   completed_at: Date;
 }
+
+export interface CancelRidePayload {
+  driver_id: string;
+  chat_room_id: string;
+  status: "pending" | "accepted" | "started" | "completed" | "cancelled";
+  cancelled_at: Date;
+}
