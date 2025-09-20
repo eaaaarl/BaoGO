@@ -132,7 +132,12 @@ export const messageApi = createApi({
           };
         }
       },
-      providesTags: ["getMessages"],
+      providesTags: (result, error, arg) => [
+        {
+          type: "getMessages",
+          id: arg.chatRoomId,
+        },
+      ],
     }),
 
     getUserInfo: builder.query<
@@ -239,7 +244,6 @@ export const messageApi = createApi({
     sendMessage: builder.mutation<any, SendMessagePayload>({
       queryFn: async ({ chatRoomId, senderId, senderType, message }) => {
         try {
-          // Insert the message
           const { data: messageData, error: messageError } = await supabase
             .from("messages")
             .insert([
@@ -261,6 +265,7 @@ export const messageApi = createApi({
               )
             `
             )
+            .select()
             .single();
 
           if (messageError) {
@@ -297,7 +302,76 @@ export const messageApi = createApi({
           };
         }
       },
-      invalidatesTags: ["getMessages", "getChatRoom"],
+
+      onQueryStarted: async (
+        { chatRoomId, message, senderId, senderType },
+        { dispatch, queryFulfilled, getState }
+      ) => {
+        const state = getState() as any;
+        const currentUser = state.auth?.user;
+
+        const optimisticMessage = {
+          id: `optimistic-${Date.now()}-${Math.random()}`,
+          chat_room_id: chatRoomId,
+          sender_id: senderId,
+          sender_type: senderType,
+          sent_at: new Date().toISOString(),
+          message: message.trim(),
+          sender: {
+            id: senderId,
+            full_name: currentUser?.full_name || "You",
+            avatar_url: currentUser?.avatar_url || "",
+          },
+        };
+
+        const patchResult = dispatch(
+          messageApi.util.updateQueryData(
+            "getChatMessages",
+            { chatRoomId },
+            (draft) => {
+              if (draft) {
+                draft.push(optimisticMessage);
+              } else {
+                console.warn("⚠️ [OPTIMISTIC] Draft is null/undefined!");
+              }
+            }
+          )
+        );
+
+        try {
+          // Wait for the actual mutation to complete
+          const result = await queryFulfilled;
+
+          // Update the cache with the real message, replacing the optimistic one
+          dispatch(
+            messageApi.util.updateQueryData(
+              "getChatMessages",
+              { chatRoomId },
+              (draft) => {
+                if (draft) {
+                  const optimisticIndex = draft.findIndex(
+                    (msg: any) => msg.id === optimisticMessage.id
+                  );
+                  if (optimisticIndex !== -1) {
+                    draft[optimisticIndex] = result.data;
+                  }
+                }
+              }
+            )
+          );
+        } catch (error) {
+          // If the mutation fails, revert the optimistic update
+          patchResult.undo();
+          console.error("Send message failed:", error);
+        }
+      },
+      invalidatesTags: (result, error, arg) => [
+        {
+          type: "getMessages",
+          id: arg.chatRoomId,
+        },
+        "getChatRoom",
+      ],
     }),
   }),
 });

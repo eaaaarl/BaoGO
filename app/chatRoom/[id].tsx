@@ -2,7 +2,7 @@ import { useGetChatMessagesQuery, useGetChatRoomByIdQuery, useSendMessageMutatio
 import { useAppSelector } from '@/libs/redux/hooks'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -29,21 +29,16 @@ interface Message {
     full_name: string
     avatar_url: string
   }
-  isOptimistic?: boolean
-  isFailed?: boolean
-  error?: any
 }
 
 export default function ChatRoom() {
   const { id, driverId } = useLocalSearchParams()
   const router = useRouter()
   const [message, setMessage] = useState('')
-  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
   const [rideStatus, setRideStatus] = useState('pending')
   const inset = useSafeAreaInsets()
   const flatListRef = useRef<FlatList>(null)
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
-  const currentUser = useAppSelector((state) => state.auth.user)
 
   const { data: messages, isLoading: messagesLoading } = useGetChatMessagesQuery({
     chatRoomId: id as string
@@ -53,22 +48,14 @@ export default function ChatRoom() {
 
   const otherUser = currentUserId === chatRoom?.driver_id ? chatRoom?.rider : chatRoom?.driver.profile || chatRoom?.driver
 
-  // Combine real messages with optimistic messages (memoized)
-  const allMessages = useMemo(() => {
-    const base = messages || []
-    if (base.length === 0 && optimisticMessages.length === 0) return []
-    return [...base, ...optimisticMessages]
-  }, [messages, optimisticMessages])
-
-  console.log('allmessages', JSON.stringify(allMessages, null, 2))
-
+  // Scroll to bottom when messages change
   useEffect(() => {
-    if (allMessages && allMessages.length > 0) {
+    if (messages && messages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true })
       }, 100)
     }
-  }, [allMessages])
+  }, [messages])
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -80,36 +67,13 @@ export default function ChatRoom() {
     })
   }
 
-
-  const generateOptimisticId = () => `optimistic-${Date.now()}-${Math.random()}`
-
   const handleSendMessage = async () => {
     if (message.trim().length === 0 || sendingMessage) return
 
     const messageText = message.trim()
-    const optimisticId = generateOptimisticId()
-    setMessage('')
+    setMessage('') // Clear input immediately
 
-    // Create optimistic message
-    const optimisticMessage: Message = {
-      id: optimisticId,
-      chat_room_id: id as string,
-      sender_id: currentUserId!,
-      sender_type: currentUserId === driverId ? 'driver' : 'rider',
-      message: messageText,
-      sent_at: new Date().toISOString(),
-      sender: {
-        id: currentUserId!,
-        full_name: currentUser?.full_name || 'You',
-        avatar_url: currentUser?.avatar_url || ''
-      },
-      isOptimistic: true
-    }
-
-    // Add optimistic message immediately
-    setOptimisticMessages(prev => [...prev, optimisticMessage])
-
-    // Scroll to end
+    // Scroll to end immediately for better UX
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true })
     }, 100)
@@ -117,54 +81,37 @@ export default function ChatRoom() {
     try {
       const senderType = currentUserId === driverId ? 'driver' : 'rider'
 
-      const result = await sendMessage({
+      // RTK Query will handle optimistic updates automatically
+      await sendMessage({
         chatRoomId: id as string,
         message: messageText,
         senderId: currentUserId!,
         senderType: senderType
       }).unwrap()
 
-      console.log('Message sent successfully:', result)
-
-      // Remove optimistic message since real message will come through the query
-      setOptimisticMessages(prev => prev.filter(msg => msg.id !== optimisticId))
+      console.log('Message sent successfully')
 
     } catch (error: any) {
       console.error("Error sending message:", error)
 
-      // Mark optimistic message as failed
-      setOptimisticMessages(prev =>
-        prev.map(msg =>
-          msg.id === optimisticId
-            ? { ...msg, isFailed: true, isOptimistic: false }
-            : msg
-        )
-      )
-
       Alert.alert(
         'Failed to send message',
-        error?.data?.message || 'Please try again',
+        error?.message || 'Please try again',
         [
           {
             text: 'Retry',
             onPress: () => {
-              setMessage(messageText)
-              // Remove failed message
-              setOptimisticMessages(prev => prev.filter(msg => msg.id !== optimisticId))
+              setMessage(messageText) // Restore message to input
             }
           },
           {
             text: 'Cancel',
-            onPress: () => {
-              // Remove failed message
-              setOptimisticMessages(prev => prev.filter(msg => msg.id !== optimisticId))
-            }
+            style: 'cancel'
           }
         ]
       )
     }
   }
-
 
   const handleRideAction = async (action: 'start' | 'cancel' | 'complete') => {
     const actionMessages = {
@@ -185,24 +132,13 @@ export default function ChatRoom() {
               const newStatus = action === 'start' ? 'started' : action === 'cancel' ? 'cancelled' : 'completed'
               setRideStatus(newStatus)
 
-              const systemMessage: Message = {
-                id: generateOptimisticId(),
-                chat_room_id: id as string,
-                sender_id: 'system',
-                sender_type: 'system',
+              // Send system message using the same mutation
+              await sendMessage({
+                chatRoomId: id as string,
                 message: actionMessages[action],
-                sent_at: new Date().toISOString(),
-                sender: {
-                  id: 'system',
-                  full_name: 'System',
-                  avatar_url: ''
-                },
-                isOptimistic: true
-              }
-
-              setOptimisticMessages(prev => [...prev, systemMessage])
-
-
+                senderId: 'system',
+                senderType: 'system'
+              }).unwrap()
 
               // Here you would make the actual API call to update ride status
               // await updateRideStatus({ rideId: id, status: newStatus })
@@ -222,7 +158,6 @@ export default function ChatRoom() {
 
   const renderRideControls = () => {
     const isDriver = currentUserId === chatRoom?.driver_id
-    // For testing purposes, you can temporarily return the controls regardless
     if (!isDriver) return null
 
     return (
@@ -278,6 +213,9 @@ export default function ChatRoom() {
   const renderMessage = ({ item }: { item: Message }) => {
     const isCurrentUser = item.sender_id === currentUserId
     const isSystemMessage = item.sender_type === 'system'
+    const isOptimistic = item.id.startsWith('optimistic-')
+
+    console.log(isOptimistic)
 
     if (isSystemMessage) {
       return (
@@ -306,32 +244,18 @@ export default function ChatRoom() {
           )}
 
           <View className={`rounded-2xl px-4 py-3 relative ${isCurrentUser
-            ? `${item.isFailed ? 'bg-red-100 border border-red-300' : item.isOptimistic ? 'bg-blue-300' : 'bg-blue-500'} rounded-br-md`
+            ? `${isOptimistic ? 'bg-blue-300' : 'bg-blue-500'} rounded-br-md`
             : 'bg-gray-200 rounded-bl-md'
             }`}>
-            <Text className={`text-base font-semibold ${isCurrentUser
-              ? item.isFailed ? 'text-red-700' : 'text-white'
-              : 'text-black'
-              }`}>
+            <Text className={`text-base font-semibold ${isCurrentUser ? 'text-white' : 'text-black'}`}>
               {item.message}
             </Text>
 
-            {item.isOptimistic && (
+            {/* Show loading indicator for optimistic messages */}
+            {isOptimistic && (
               <View className="absolute -bottom-1 -right-1 bg-gray-400 rounded-full w-4 h-4 items-center justify-center">
                 <ActivityIndicator size="small" color="white" />
               </View>
-            )}
-
-            {item.isFailed && (
-              <TouchableOpacity
-                className="absolute -bottom-1 -right-1 bg-red-500 rounded-full w-4 h-4 items-center justify-center"
-                onPress={() => {
-                  setMessage(item.message)
-                  setOptimisticMessages(prev => prev.filter(msg => msg.id !== item.id))
-                }}
-              >
-                <Ionicons name="refresh" size={10} color="white" />
-              </TouchableOpacity>
             )}
           </View>
 
@@ -344,10 +268,8 @@ export default function ChatRoom() {
           )}
         </View>
 
-        <Text className={`text-xs text-gray-500 font-normal mt-1 ${isCurrentUser ? 'mr-10' : 'ml-10'
-          }`}>
+        <Text className={`text-xs text-gray-500 font-normal mt-1 ${isCurrentUser ? 'mr-10' : 'ml-10'}`}>
           {formatTime(item.sent_at)}
-          {item.isFailed && <Text className="text-red-500"> • Failed to send</Text>}
         </Text>
       </View>
     )
@@ -364,7 +286,7 @@ export default function ChatRoom() {
       </Text>
 
       <Text className="text-gray-500 text-center leading-6 mb-6">
-        Say hello to your driver! They’ll receive your message and can respond to coordinate your ride.
+        Say hello to your driver! They'll receive your message and can respond to coordinate your ride.
       </Text>
 
       <View className="bg-blue-50 rounded-xl p-4 w-full">
@@ -375,19 +297,19 @@ export default function ChatRoom() {
           className="py-2"
           onPress={() => setMessage("Hello! I'm ready for pickup.")}
         >
-          <Text className="text-blue-700">“Hello! I’m ready for pickup.”</Text>
+          <Text className="text-blue-700">"Hello! I'm ready for pickup."</Text>
         </TouchableOpacity>
         <TouchableOpacity
           className="py-2"
           onPress={() => setMessage("What's your ETA?")}
         >
-          <Text className="text-blue-700">“What’s your ETA?”</Text>
+          <Text className="text-blue-700">"What's your ETA?"</Text>
         </TouchableOpacity>
         <TouchableOpacity
           className="py-2"
           onPress={() => setMessage("I'm at the pickup location.")}
         >
-          <Text className="text-blue-700">“I’m at the pickup location.”</Text>
+          <Text className="text-blue-700">"I'm at the pickup location."</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -425,7 +347,7 @@ export default function ChatRoom() {
         <>
           <FlatList
             ref={flatListRef}
-            data={allMessages}
+            data={messages || []}
             renderItem={renderMessage}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{
@@ -435,7 +357,7 @@ export default function ChatRoom() {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={renderEmptyState}
             onContentSizeChange={() => {
-              if (allMessages && allMessages.length > 0) {
+              if (messages && messages.length > 0) {
                 flatListRef.current?.scrollToEnd({ animated: false })
               }
             }}
@@ -465,15 +387,19 @@ export default function ChatRoom() {
 
               <TouchableOpacity
                 onPress={handleSendMessage}
-                disabled={message.trim().length === 0}
-                className={`w-10 h-10 rounded-full items-center justify-center ${message.trim().length > 0 ? 'bg-blue-500' : 'bg-gray-300'
+                disabled={message.trim().length === 0 || sendingMessage}
+                className={`w-10 h-10 rounded-full items-center justify-center ${message.trim().length > 0 && !sendingMessage ? 'bg-blue-500' : 'bg-gray-300'
                   }`}
               >
-                <Ionicons
-                  name="send"
-                  size={18}
-                  color={message.trim().length > 0 ? "white" : "#666"}
-                />
+                {sendingMessage ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Ionicons
+                    name="send"
+                    size={18}
+                    color={message.trim().length > 0 ? "white" : "#666"}
+                  />
+                )}
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
