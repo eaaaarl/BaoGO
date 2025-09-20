@@ -39,9 +39,14 @@ export function formatTime(minutes: number): string {
     return `${hours}h ${remainingMinutes}m`;
   }
 }
-
-export function formatDate(dateString: string): string {
+export function formatDate(dateString: string | Date): string {
   const date = new Date(dateString);
+
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    return "Invalid Date";
+  }
+
   const day = date.getDate();
   const monthNames = [
     "January",
@@ -60,5 +65,47 @@ export function formatDate(dateString: string): string {
   const month = monthNames[date.getMonth()];
   const year = date.getFullYear();
 
-  return `${day < 10 ? "0" + day : day} ${month} ${year}`;
+  // Get time components
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+
+  // Format time in 12-hour format
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const formattedHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+  const formattedMinutes = minutes < 10 ? "0" + minutes : minutes;
+
+  return `${day < 10 ? "0" + day : day} ${month} ${year}, ${formattedHours}:${formattedMinutes} ${ampm}`;
+}
+
+export function formatDate24Hour(dateString: string | Date): string {
+  const date = new Date(dateString);
+
+  if (isNaN(date.getTime())) {
+    return "Invalid Date";
+  }
+
+  const day = date.getDate();
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const formattedHours = hours < 10 ? "0" + hours : hours;
+  const formattedMinutes = minutes < 10 ? "0" + minutes : minutes;
+
+  return `${day < 10 ? "0" + day : day} ${month} ${year}, ${formattedHours}:${formattedMinutes}`;
 }
