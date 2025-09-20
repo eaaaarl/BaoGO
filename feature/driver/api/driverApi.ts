@@ -249,7 +249,6 @@ export const driverApi = createApi({
       },
       invalidatesTags: ["getRiderRequestRide"],
     }),
-
     acceptRiderRequestRide: builder.mutation<
       any,
       { requestId: string; driverId: string }

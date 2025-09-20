@@ -1,4 +1,5 @@
 import { useGetChatMessagesQuery, useGetChatRoomByIdQuery, useSendMessageMutation } from '@/feature/message/api/messageApi'
+import { useGetStatusRideQuery, useStartRideMutation } from '@/feature/ride/api/rideApi'
 import { useAppSelector } from '@/libs/redux/hooks'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -35,7 +36,6 @@ export default function ChatRoom() {
   const { id, driverId } = useLocalSearchParams()
   const router = useRouter()
   const [message, setMessage] = useState('')
-  const [rideStatus, setRideStatus] = useState('pending')
   const inset = useSafeAreaInsets()
   const flatListRef = useRef<FlatList>(null)
   const currentUserId = useAppSelector((state) => state.auth.user?.id)
@@ -45,6 +45,14 @@ export default function ChatRoom() {
   })
   const { data: chatRoom } = useGetChatRoomByIdQuery({ chatRoomId: id as string })
   const [sendMessage, { isLoading: sendingMessage }] = useSendMessageMutation()
+  const { data: rideStatus } = useGetStatusRideQuery({
+    chat_room_id: id as string,
+    driver_id: chatRoom?.driver_id as string,
+    rider_id: chatRoom?.rider_id as string
+  })
+
+
+  const [startRide, { isLoading: startRideLoading }] = useStartRideMutation()
 
   const otherUser = currentUserId === chatRoom?.driver_id ? chatRoom?.rider : chatRoom?.driver.profile || chatRoom?.driver
 
@@ -129,25 +137,22 @@ export default function ChatRoom() {
           text: 'Confirm',
           onPress: async () => {
             try {
-              const newStatus = action === 'start' ? 'started' : action === 'cancel' ? 'cancelled' : 'completed'
-              setRideStatus(newStatus)
 
-              // Send system message using the same mutation
               await sendMessage({
                 chatRoomId: id as string,
                 message: actionMessages[action],
-                senderId: 'system',
                 senderType: 'system'
               }).unwrap()
 
-              // Here you would make the actual API call to update ride status
-              // await updateRideStatus({ rideId: id, status: newStatus })
+              await startRide({
+                chat_room_id: id as string,
+                driver_id: chatRoom?.driver_id as string,
+                started_at: new Date(),
+                status: 'started'
+              })
 
-              console.log(`Ride ${action} successfully`)
             } catch (error) {
               console.error(`Error ${action}ing ride:`, error)
-              // Revert status on error
-              setRideStatus('pending')
               Alert.alert('Error', `Failed to ${action} ride. Please try again.`)
             }
           }
@@ -160,10 +165,12 @@ export default function ChatRoom() {
     const isDriver = currentUserId === chatRoom?.driver_id
     if (!isDriver) return null
 
+    const status = rideStatus?.status;
+
     return (
       <View className="px-4 py-3">
         <View className="flex-row gap-3">
-          {rideStatus === 'pending' && (
+          {status === 'pending' && (
             <>
               <TouchableOpacity
                 onPress={() => handleRideAction('start')}
@@ -183,7 +190,7 @@ export default function ChatRoom() {
             </>
           )}
 
-          {rideStatus === 'started' && (
+          {status === 'started' && (
             <TouchableOpacity
               onPress={() => handleRideAction('complete')}
               className="flex-1 bg-blue-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
@@ -193,15 +200,15 @@ export default function ChatRoom() {
             </TouchableOpacity>
           )}
 
-          {(rideStatus === 'cancelled' || rideStatus === 'completed') && (
+          {(status === 'cancelled' || status === 'completed') && (
             <View className="flex-1 bg-gray-300 rounded-xl py-3 px-4 flex-row items-center justify-center">
               <Ionicons
-                name={rideStatus === 'completed' ? "checkmark-circle" : "close-circle"}
+                name={status === 'completed' ? "checkmark-circle" : "close-circle"}
                 size={20}
                 color="#666"
               />
               <Text className="text-gray-600 font-semibold ml-2 capitalize">
-                Ride {rideStatus}
+                Ride {status}
               </Text>
             </View>
           )}
@@ -333,9 +340,9 @@ export default function ChatRoom() {
           <Text className="font-bold text-lg">
             {otherUser?.full_name}
           </Text>
-          <Text className="text-xs text-gray-500 capitalize">
+          {/* <Text className="text-xs text-gray-500 capitalize">
             Ride Status: {rideStatus}
-          </Text>
+          </Text> */}
         </View>
       </View>
 

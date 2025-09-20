@@ -15,3 +15,10 @@ export interface CreateRidePayload {
   cancelled_at?: Date;
   notes?: string;
 }
+
+export interface StartRidePayload {
+  driver_id: string;
+  chat_room_id: string;
+  status: "pending" | "accepted" | "started" | "completed" | "cancelled";
+  started_at: Date;
+}

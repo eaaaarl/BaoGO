@@ -91,6 +91,7 @@ export const messageApi = createApi({
           };
         }
       },
+      providesTags: ["getChatRoom"],
     }),
 
     getChatMessages: builder.query<any, { chatRoomId: string }>({
@@ -370,7 +371,6 @@ export const messageApi = createApi({
           type: "getMessages",
           id: arg.chatRoomId,
         },
-        "getChatRoom",
         "getChatRoom",
       ],
     }),
