@@ -4,13 +4,14 @@ import {
   CancelRidePayload,
   CompleteRidePayload,
   CreateRidePayload,
+  Ride,
   StartRidePayload,
 } from "./interface";
 
 export const rideApi = createApi({
   reducerPath: "rideApi",
   baseQuery: fakeBaseQuery(),
-  tagTypes: ["getStatusRide"],
+  tagTypes: ["getStatusRide", "getRecentsRide"],
   endpoints: (builder) => ({
     createRides: builder.mutation<any, CreateRidePayload>({
       queryFn: async ({
@@ -295,6 +296,112 @@ export const rideApi = createApi({
       },
       invalidatesTags: ["getStatusRide"],
     }),
+
+    getRecentRides: builder.query<
+      { success: boolean; rides: Ride[] },
+      { currentUserId: string; userRole: "Rider" | "Driver" | "System" }
+    >({
+      queryFn: async ({ currentUserId, userRole }) => {
+        try {
+          let query;
+
+          if (userRole === "Rider") {
+            // Get rides where the current user is the rider
+            query = supabase
+              .from("rides")
+              .select(
+                `
+              *,
+              driver:driver_profiles!rides_driver_id_fkey(
+                *, profiles:profiles(*)
+              )
+            `
+              )
+              .eq("rider_id", currentUserId)
+              .order("created_at", { ascending: false })
+              .limit(10);
+          } else if (userRole === "Driver") {
+            // Get rides where the current user is the driver
+            query = supabase
+              .from("rides")
+              .select(
+                `
+              *,
+              rider:profiles!rides_rider_id_fkey(
+                id,
+                full_name,
+                avatar_url,
+                phone_number
+              )
+            `
+              )
+              .eq("driver_id", currentUserId)
+              .order("created_at", { ascending: false })
+              .limit(10);
+          } else if (userRole === "System") {
+            // Get all rides for system/admin view
+            query = supabase
+              .from("rides")
+              .select(
+                `
+              *,
+              rider:profiles!rides_rider_id_fkey(
+                id,
+                full_name,
+                avatar_url,
+                phone_number
+              ),
+              driver:profiles!rides_driver_id_fkey(
+                id,
+                full_name,
+                avatar_url,
+                phone_number
+              )
+            `
+              )
+              .order("created_at", { ascending: false })
+              .limit(20);
+          }
+
+          if (!query) {
+            return {
+              error: {
+                success: false,
+                message: "Invalid user role",
+              },
+            };
+          }
+
+          const { data, error } = await query;
+
+          if (error) {
+            console.error("Supabase error:", error);
+            return {
+              error: {
+                success: false,
+                message: error.message || "Failed to fetch recent rides",
+              },
+            };
+          }
+
+          return {
+            data: {
+              success: true,
+              rides: data,
+            },
+          };
+        } catch (error) {
+          console.error("Error at getRecentRides", error);
+          return {
+            error: {
+              success: false,
+              message: "Error at getRecentRides",
+            },
+          };
+        }
+      },
+      providesTags: ["getRecentsRide"],
+    }),
   }),
 });
 
@@ -304,4 +411,5 @@ export const {
   useGetStatusRideQuery,
   useFinishRideMutation,
   useCancelRideMutation,
+  useGetRecentRidesQuery,
 } = rideApi;

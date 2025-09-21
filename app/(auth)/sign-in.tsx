@@ -3,13 +3,12 @@ import InputField from "@/components/InputFields";
 import OAuth from "@/components/OAuth";
 import { icons, images } from "@/constant/image";
 import { useSignInMutation } from "@/feature/auth/api/authApi";
-import { useAppDispatch, useAppSelector } from "@/libs/redux/hooks";
+import { useAppSelector } from "@/libs/redux/hooks";
 import { Link, router } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-native";
 
 const SignIn = () => {
-  const dispatch = useAppDispatch()
   const { userRole } = useAppSelector((state) => state.userRole)
   const [form, setForm] = useState({
     email: "",

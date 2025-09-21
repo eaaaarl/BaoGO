@@ -74,7 +74,6 @@ export default function Map() {
     skip: !userLatitude || !userLongitude
   });
 
-  console.log(nearbyDrivers);
 
   const [markers, setMarkers] = useState<any[]>([]);
   useEffect(() => {
