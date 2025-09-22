@@ -318,6 +318,7 @@ export const rideApi = createApi({
             `
               )
               .eq("rider_id", currentUserId)
+              .in("status", ["completed", "cancelled"])
               .order("created_at", { ascending: false })
               .limit(10);
           } else if (userRole === "Driver") {
@@ -336,6 +337,7 @@ export const rideApi = createApi({
             `
               )
               .eq("driver_id", currentUserId)
+              .in("status", ["completed", "cancelled"])
               .order("created_at", { ascending: false })
               .limit(10);
           } else if (userRole === "System") {

@@ -15,38 +15,52 @@ export const messageApi = createApi({
     createChatRoom: builder.mutation<any, CreateChatRoomPayload>({
       queryFn: async ({ driverId, riderId }) => {
         try {
+          // First check if ANY chat room exists for this rider
+          const { data: existingRoom } = await supabase
+            .from("chat_rooms")
+            .select("*")
+            .eq("driver_id", driverId)
+            .eq("rider_id", riderId)
+            .maybeSingle();
+
+          if (existingRoom) {
+            return {
+              data: existingRoom,
+              meta: {
+                success: true,
+                message: "Chat room already exists",
+              },
+            };
+          }
+
+          // Try to create new room
           const { data, error } = await supabase
             .from("chat_rooms")
-            .upsert(
-              [
-                {
-                  driver_id: driverId,
-                  rider_id: riderId,
-                  status: "Active",
-                },
-              ],
-              { onConflict: "driver_id,rider_id" }
-            )
+            .insert([
+              {
+                driver_id: driverId,
+                rider_id: riderId,
+                status: "Active",
+              },
+            ])
             .select()
             .single();
 
           if (error) {
-            return {
-              error: { message: error.message },
-            };
+            return { error: { message: error.message } };
           }
 
           return {
             data,
             meta: {
               success: true,
-              message: `Chat rooms created Id: ${data}`,
+              message: `Chat room created: ${data.id}`,
             },
           };
         } catch (error) {
           console.error("Error create chat room:", error);
           return {
-            error: { message: "Failed to create a chat room" },
+            error: { message: "Failed to create chat room" },
           };
         }
       },

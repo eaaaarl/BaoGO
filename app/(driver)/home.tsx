@@ -1,6 +1,6 @@
 import { images } from '@/constant/image';
 import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
-import { useGetIsAvailableStatusQuery, useToggleStatusMutation } from '@/feature/driver/api/driverApi';
+import { useGetIsAvailableStatusQuery, useToggleStatusMutation, useUpdateDriverLocationMutation } from '@/feature/driver/api/driverApi';
 import { Ride } from '@/feature/ride/api/interface';
 import { useGetRecentRidesQuery } from '@/feature/ride/api/rideApi';
 import { useAppSelector } from '@/libs/redux/hooks';
@@ -33,7 +33,6 @@ export default function Home() {
     skip: !user?.id
   });
 
-  // Remove the local isOnline state - we'll use isAvailable from API
   const insets = useSafeAreaInsets();
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
   const [myLocation, setMyLocation] = useState<LocationState>({
@@ -58,10 +57,11 @@ export default function Home() {
     skip: !user?.id
   });
 
-  // Extract the boolean value from the API response
+  const [updateLocation] = useUpdateDriverLocationMutation()
+
   const isAvailable = availabilityData?.is_available || false;
 
-  const [toggleStatus, { isLoading: toggleStatusLoading }] = useToggleStatusMutation();
+  const [toggleStatus] = useToggleStatusMutation();
 
   const handleToggleStatus = async (value: boolean) => {
     try {
@@ -69,9 +69,6 @@ export default function Home() {
         driver_id: user?.id as string,
         is_available: value
       }).unwrap();
-
-      console.log(`Status changed to: ${value ? 'online' : 'offline'}`);
-
     } catch (error) {
       console.error('Toggle status error:', error);
       Alert.alert(
@@ -136,6 +133,12 @@ export default function Home() {
         longitude: String(location.coords.longitude)
       });
 
+      await updateLocation({
+        driver_id: user.id,
+        driverLatitude: location.coords.latitude,
+        driverLongitude: location.coords.longitude
+      })
+
     } catch (error) {
       console.log('Location error:', error);
       Alert.alert(
@@ -145,7 +148,7 @@ export default function Home() {
     } finally {
       setIsLoadingLocation(false);
     }
-  }, [user]);
+  }, [user, updateLocation]);
 
   useEffect(() => {
     if (user) {

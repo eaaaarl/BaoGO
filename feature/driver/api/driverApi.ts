@@ -1,12 +1,7 @@
 import { authApi } from "@/feature/auth/api/authApi";
 import { supabase } from "@/libs/supabase";
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import {
-  DriverProfile,
-  Ride,
-  UpdateDriverLocationPayload,
-  UpdateDriverProfilePayload,
-} from "./interface";
+import { DriverProfile, Ride, UpdateDriverProfilePayload } from "./interface";
 
 export const driverApi = createApi({
   reducerPath: "driverApi",
@@ -127,32 +122,7 @@ export const driverApi = createApi({
       },
       providesTags: ["DriverProfile", "DriverLocation"],
     }),
-    updateDriverLocation: builder.mutation({
-      queryFn: async (payload: UpdateDriverLocationPayload) => {
-        try {
-          const { data, error } = await supabase
-            .from("driver_locations")
-            .update(payload)
-            .eq("id", payload.id);
 
-          if (error) {
-            return {
-              error: {
-                status: "CUSTOM_ERROR",
-                error: error.message,
-              },
-            };
-          }
-
-          return {
-            data,
-          };
-        } catch (error) {
-          return { error: { status: "CUSTOM_ERROR", error: error as string } };
-        }
-      },
-      invalidatesTags: ["DriverLocation"],
-    }),
     getDriverChatRooms: builder.query<any[], { driverId: string }>({
       queryFn: async ({ driverId }) => {
         const { data, error } = await supabase
@@ -314,11 +284,12 @@ export const driverApi = createApi({
     }),
 
     getIsAvailableStatus: builder.query<any, { driver_id: string }>({
-      queryFn: async () => {
+      queryFn: async ({ driver_id }) => {
         try {
           const { data, error } = await supabase
             .from("driver_profiles")
             .select("is_available")
+            .eq("id", driver_id)
             .single();
 
           if (error) {
@@ -415,6 +386,50 @@ export const driverApi = createApi({
         }
       },
       invalidatesTags: ["getIsAvailableStatus"],
+    }),
+
+    updateDriverLocation: builder.mutation<
+      any,
+      { driver_id: string; driverLatitude: number; driverLongitude: number }
+    >({
+      queryFn: async ({ driverLatitude, driverLongitude, driver_id }) => {
+        try {
+          const { data, error } = await supabase
+            .from("driver_profiles")
+            .update({
+              latitude: driverLatitude,
+              longitude: driverLongitude,
+              last_location_update: new Date(),
+            })
+            .eq("id", driver_id)
+            .select()
+            .single();
+
+          if (error) {
+            return {
+              error: {
+                message: error.message,
+              },
+            };
+          }
+
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Driver Location Updated.",
+            },
+          };
+        } catch (error) {
+          console.error("Error at updateDriverLocation", error);
+          return {
+            error: {
+              message: "Error at updateDriverLocation",
+            },
+          };
+        }
+      },
+      invalidatesTags: ["DriverLocation"],
     }),
   }),
 });
