@@ -92,8 +92,6 @@ export const userApi = createApi({
             .not("longitude", "is", null)
             .order("last_location_update", { ascending: false });
 
-          console.log("Data Available Drivers", data);
-
           if (error) {
             console.log(error);
             return { error: { status: "CUSTOM_ERROR", error: error.message } };
@@ -108,7 +106,6 @@ export const userApi = createApi({
       },
       providesTags: ["AvailableDrivers"],
     }),
-
     requestRide: builder.mutation<any, RequestRidePayload>({
       queryFn: async ({
         destinationLocation,

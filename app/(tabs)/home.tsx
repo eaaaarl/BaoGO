@@ -25,8 +25,8 @@ export default function Index() {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   const loading = false;
-  const { data: profileUser, isLoading: profileUserLoading } = useGetProfileUserQuery(user?.id as string);
-  const { data: recentsRides, isLoading: recentsRideLoading } = useGetRecentRidesQuery({
+  const { data: profileUser, isLoading: profileUserLoading, refetch: profileUserRefetch } = useGetProfileUserQuery(user?.id as string);
+  const { data: recentsRides, isLoading: recentsRideLoading, refetch: recentsRideRefetch } = useGetRecentRidesQuery({
     currentUserId: user?.id as string,
     userRole: 'Rider'
   })
@@ -96,8 +96,10 @@ export default function Index() {
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
     await getCurrentLocation();
+    await profileUserRefetch()
+    await recentsRideRefetch()
     setTimeout(() => setIsRefreshing(false), 500);
-  }, [getCurrentLocation]);
+  }, [getCurrentLocation, profileUserRefetch, recentsRideRefetch]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -217,7 +219,7 @@ export default function Index() {
         }
       />
 
-      {profileUserLoading && (<LoadingOverlay />)}
+      {profileUserLoading || recentsRideLoading && (<LoadingOverlay />)}
     </SafeAreaView>
   );
 }

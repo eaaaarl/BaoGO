@@ -31,6 +31,8 @@ export default function Request() {
   const [createChatRoom, { isLoading: createChatRoomLoading }] = useCreateChatRoomMutation()
   const [createRides, { isLoading: createRidesLoading }] = useCreateRidesMutation()
 
+  console.log('getRiderRequestRide', getRiderRequestRide)
+
   const handleAccept = (ride: Ride) => {
     Alert.alert(
       "Accept Ride Request",
@@ -68,6 +70,7 @@ export default function Request() {
         })
 
         const chatRoomId = responseChatRoom.data?.id
+        console.log('creating a chat rooms', responseChatRoom)
 
         await createRides({
           chat_room_id: chatRoomId,
