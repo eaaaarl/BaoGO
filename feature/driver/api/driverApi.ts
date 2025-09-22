@@ -16,6 +16,7 @@ export const driverApi = createApi({
     "DriverLocation",
     "DriverChatRooms",
     "getRiderRequestRide",
+    "getIsAvailableStatus",
   ],
   endpoints: (builder) => ({
     updateDriverProfile: builder.mutation({
@@ -311,6 +312,110 @@ export const driverApi = createApi({
       },
       invalidatesTags: ["getRiderRequestRide"],
     }),
+
+    getIsAvailableStatus: builder.query<any, { driver_id: string }>({
+      queryFn: async () => {
+        try {
+          const { data, error } = await supabase
+            .from("driver_profiles")
+            .select("is_available")
+            .single();
+
+          if (error) {
+            return {
+              error: {
+                message: error.message,
+              },
+            };
+          }
+
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Fetch is_available status",
+            },
+          };
+        } catch (error) {
+          console.error("Error at getIsAvailableStatus", error);
+          return {
+            error: {
+              message: "Error at getIsAvailableStatus",
+            },
+          };
+        }
+      },
+      providesTags: (result, error, { driver_id }) => [
+        { type: "getIsAvailableStatus", id: driver_id },
+      ],
+    }),
+
+    toggleStatus: builder.mutation<
+      { is_available: boolean },
+      { is_available: boolean; driver_id: string }
+    >({
+      queryFn: async ({ is_available, driver_id }) => {
+        try {
+          const { data, error } = await supabase
+            .from("driver_profiles")
+            .update({
+              is_available,
+            })
+            .eq("id", driver_id)
+            .select()
+            .single();
+
+          if (error) {
+            return {
+              error: {
+                message: error.message,
+              },
+            };
+          }
+
+          return {
+            data,
+            meta: {
+              success: true,
+              message: "Status updated.",
+            },
+          };
+        } catch (error) {
+          console.error("Error at toggle status", error);
+          return {
+            error: {
+              message: "Error at toggle status",
+            },
+          };
+        }
+      },
+      onQueryStarted: async (
+        { driver_id, is_available },
+        { dispatch, queryFulfilled }
+      ) => {
+        const patchResult = dispatch(
+          driverApi.util.updateQueryData(
+            "getIsAvailableStatus",
+            { driver_id },
+            (draft) => {
+              if (draft) {
+                draft.is_available = is_available;
+              }
+            }
+          )
+        );
+        try {
+          // 2. Wait for the real API call
+          await queryFulfilled;
+          // ✅ Success - cache stays updated
+        } catch (error) {
+          // ❌ Failed - automatically revert the UI
+          patchResult.undo();
+          console.error("Toggle failed, UI reverted:", error);
+        }
+      },
+      invalidatesTags: ["getIsAvailableStatus"],
+    }),
   }),
 });
 
@@ -322,4 +427,6 @@ export const {
   useGetRiderRequestRideQuery,
   useDeclineRiderRequestRideMutation,
   useAcceptRiderRequestRideMutation,
+  useGetIsAvailableStatusQuery,
+  useToggleStatusMutation,
 } = driverApi;

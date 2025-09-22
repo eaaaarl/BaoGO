@@ -1,4 +1,6 @@
+import { images } from '@/constant/image';
 import { useGetProfileUserQuery } from '@/feature/auth/api/authApi';
+import { useGetIsAvailableStatusQuery, useToggleStatusMutation } from '@/feature/driver/api/driverApi';
 import { Ride } from '@/feature/ride/api/interface';
 import { useGetRecentRidesQuery } from '@/feature/ride/api/rideApi';
 import { useAppSelector } from '@/libs/redux/hooks';
@@ -31,9 +33,8 @@ export default function Home() {
     skip: !user?.id
   });
 
-  const [isOnline, setIsOnline] = useState(false);
+  // Remove the local isOnline state - we'll use isAvailable from API
   const insets = useSafeAreaInsets();
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
   const [myLocation, setMyLocation] = useState<LocationState>({
     latitude: '',
@@ -41,8 +42,9 @@ export default function Home() {
     address: ''
   });
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshTimeoutRef = useRef<number | null>(null);
   const isRefreshingRef = useRef(false);
+
   const { data: recentsRide, isLoading: recentsRideLoading, refetch: recentsRideRefetch } = useGetRecentRidesQuery({
     currentUserId: user?.id as string,
     userRole: 'Driver'
@@ -50,12 +52,40 @@ export default function Home() {
     skip: !user?.id
   });
 
+  const { data: availabilityData, isLoading: isAvailableLoading, refetch: refetchAvailableStatus } = useGetIsAvailableStatusQuery({
+    driver_id: user?.id as string
+  }, {
+    skip: !user?.id
+  });
+
+  // Extract the boolean value from the API response
+  const isAvailable = availabilityData?.is_available || false;
+
+  const [toggleStatus, { isLoading: toggleStatusLoading }] = useToggleStatusMutation();
+
+  const handleToggleStatus = async (value: boolean) => {
+    try {
+      await toggleStatus({
+        driver_id: user?.id as string,
+        is_available: value
+      }).unwrap();
+
+      console.log(`Status changed to: ${value ? 'online' : 'offline'}`);
+
+    } catch (error) {
+      console.error('Toggle status error:', error);
+      Alert.alert(
+        'Connection Issue',
+        'Could not update your status. Please check your internet connection.',
+        [{ text: 'OK', style: 'default' }]
+      );
+    }
+  };
+
   const requestLocationPermission = async (): Promise<boolean> => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      const granted = status === 'granted';
-      setHasPermission(granted);
-      return granted;
+      return status === 'granted';
     } catch (error) {
       console.log('Permission error:', error);
       return false;
@@ -236,6 +266,7 @@ export default function Home() {
       await Promise.all([
         profileRefetch(),
         recentsRideRefetch(),
+        refetchAvailableStatus(),
         getCurrentLocation()
       ]);
     } catch (error) {
@@ -252,7 +283,7 @@ export default function Home() {
         isRefreshingRef.current = false;
       }, 500); // 500ms delay
     }
-  }, [profileRefetch, recentsRideRefetch, getCurrentLocation]);
+  }, [profileRefetch, recentsRideRefetch, refetchAvailableStatus, getCurrentLocation]);
 
   // Clean up timeout on unmount
   useEffect(() => {
@@ -263,7 +294,7 @@ export default function Home() {
     };
   }, []);
 
-  const isLoading = profileLoading || recentsRideLoading || isLoadingLocation;
+  const isLoading = profileLoading || recentsRideLoading || isLoadingLocation || isAvailableLoading;
 
   return (
     <View>
@@ -325,20 +356,31 @@ export default function Home() {
               <View className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                 <View className="flex-row items-center justify-between mb-2">
                   <View className="flex-row items-center">
-                    <View className={`w-3 h-3 rounded-full mr-3 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    <View className={`w-3 h-3 rounded-full mr-3 ${isAvailable ? 'bg-green-500' : 'bg-gray-400'}`} />
                     <Text className="text-lg font-semibold text-gray-800">
-                      {isOnline ? 'You\'re Online' : 'You\'re Offline'}
+                      {isAvailable ? 'You\'re Online' : 'You\'re Offline'}
                     </Text>
+
+                    {isAvailableLoading && !availabilityData && (
+                      <ActivityIndicator
+                        size="small"
+                        color="#3B82F6"
+                        style={{ marginLeft: 8 }}
+                      />
+                    )}
                   </View>
+
                   <Switch
-                    value={isOnline}
-                    onValueChange={setIsOnline}
+                    value={isAvailable}
+                    onValueChange={handleToggleStatus}
                     trackColor={{ false: '#E5E7EB', true: '#10B981' }}
                     thumbColor="#ffffff"
+                    disabled={isAvailableLoading && !availabilityData}
                   />
                 </View>
+
                 <Text className="text-sm text-gray-500">
-                  {isOnline
+                  {isAvailable
                     ? 'Ready to receive ride requests'
                     : 'Turn on to start earning'
                   }
@@ -351,8 +393,8 @@ export default function Home() {
                 <View className="bg-white flex-1 p-4 rounded-2xl shadow-sm border border-gray-100">
                   <View className="flex-row items-center justify-between mb-2">
                     <Text className="text-sm text-gray-500">Total Rides</Text>
-                    <View className="p-1.5 rounded-lg bg-blue-100">
-                      <Ionicons name="car-sport" size={16} color="#3B82F6" />
+                    <View className="rounded-lg">
+                      <Image source={images.baobao2} resizeMode='contain' className='w-9 h-9' />
                     </View>
                   </View>
                   <Text className="text-2xl font-bold text-gray-800 mb-1">{completedRides}</Text>
@@ -364,19 +406,19 @@ export default function Home() {
                 <View className="bg-white flex-1 p-4 rounded-2xl shadow-sm border border-gray-100">
                   <View className="flex-row items-center justify-between mb-2">
                     <Text className="text-sm text-gray-500">Status</Text>
-                    <View className={`p-1.5 rounded-lg ${isOnline ? 'bg-green-100' : 'bg-gray-100'}`}>
+                    <View className={`p-1.5 rounded-lg ${isAvailable ? 'bg-green-100' : 'bg-gray-100'}`}>
                       <Ionicons
-                        name={isOnline ? "checkmark-circle" : "pause-circle"}
+                        name={isAvailable ? "checkmark-circle" : "pause-circle"}
                         size={16}
-                        color={isOnline ? "#10B981" : "#6B7280"}
+                        color={isAvailable ? "#10B981" : "#6B7280"}
                       />
                     </View>
                   </View>
                   <Text className="text-lg font-bold text-gray-800 mb-1">
-                    {isOnline ? "Online" : "Offline"}
+                    {isAvailable ? "Online" : "Offline"}
                   </Text>
                   <Text className="text-xs text-gray-500">
-                    {isOnline ? "Available" : "Not accepting"}
+                    {isAvailable ? "Available" : "Not accepting"}
                   </Text>
                 </View>
               </View>
@@ -396,7 +438,7 @@ export default function Home() {
               <Ionicons name="car-outline" size={32} color="#9CA3AF" />
             </View>
             <Text className="text-gray-500 text-center font-medium">No rides yet</Text>
-            <Text className="text-gray-400 text-sm text-center mt-1">
+            <Text className="text-gray-400 text-center mt-1">
               Turn online to start receiving ride requests
             </Text>
           </View>
